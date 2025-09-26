@@ -1,4 +1,4 @@
-# KlipperLCD (for Elegoo Neptune 3 Pro LCD screen)
+# KlipperLCD (for Artillery X3 plus/Pro LCD screen)
 Want to run Klipper on your Neptune 3 Pro? And still want to be able to use your Neptune 3 Pro LCD touch screen?
 
 Take a look at this python service for the Elegoo Neptune 3 Pro LCD! Running together with Klipper3d and Moonraker!
