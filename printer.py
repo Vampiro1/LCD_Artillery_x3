@@ -6,9 +6,11 @@ import socket
 import json
 import requests
 from requests.exceptions import ConnectionError
+from json import JSONDecodeError
 import atexit
 import time
 import asyncio
+import os
 
 class xyze_t:
 	x = 0.0
@@ -194,11 +196,11 @@ class PrinterData:
 	HAS_PREHEAT = True
 	HAS_BED_PROBE = False
 	PREVENT_COLD_EXTRUSION = True
-	EXTRUDE_MINTEMP = 170
-	EXTRUDE_MAXLENGTH = 200
+	EXTRUDE_MINTEMP = 180
+	EXTRUDE_MAXLENGTH = 110
 
-	HEATER_0_MAXTEMP = 275
-	HEATER_0_MINTEMP = 5
+	HEATER_0_MAXTEMP = 300
+	HEATER_0_MINTEMP = 0
 	HOTEND_OVERSHOOT = 15
 
 	MAX_E_TEMP = (HEATER_0_MAXTEMP - (HOTEND_OVERSHOOT))
@@ -219,6 +221,8 @@ class PrinterData:
 	Z_PROBE_OFFSET_RANGE_MIN = -20
 	Z_PROBE_OFFSET_RANGE_MAX = 20
 
+	print_duration: int = 0
+
 	buzzer = buzz_t()
 
 	material_preset = [
@@ -230,14 +234,19 @@ class PrinterData:
 	SHORT_BUILD_VERSION = "1.00"
 	CORP_WEBSITE_E = "https://www.klipper3d.org/"
 
-	def __init__(self, API_Key, URL='127.0.0.1', klippy_sock='/home/pi/printer_data/comms/klippy.sock', callback=None):
+	def __init__(self, API_Key, URL='127.0.0.1', klippy_sock='/home/pi/printer_data/comms/klippy.sock', callback=None, lcd_instance=None):
 		self.response_callback = callback
 		self.klippy_sock      = klippy_sock
 		self.BABY_Z_VAR       = 0
 		self.print_speed      = 100
 		self.flow_percentage  = 100
-		self.led_percentage   = 0
+		self.light_percentage   = None
+		self.light1_percentage  = None
+		self.neopixel_r        = None
+		self.neopixel_g        = None
+		self.neopixel_b        = None
 		self.temphot          = 0
+		self.fan_speed        = 0
 		self.tempbed          = 0
 		self.HMI_ValueStruct  = HMI_value_t()
 		self.HMI_flag         = HMI_Flag_t()
@@ -249,15 +258,24 @@ class PrinterData:
 			'temp_hotend': [{'celsius': 20, 'target': 120}],
 			'fan_speed': [100]
 		}
+		self.lcd = lcd_instance
 		self.job_Info               = None
+		self.print_duration = 0
+		self.current_layer  = 0
+		self.total_layer    = 0
 		self.file_path              = None
 		self.file_name              = None
 		self.status                 = None
 		self.max_velocity           = None
 		self.max_accel              = None
-		self.max_accel_to_decel     = None
+		self.minimum_cruise_ratio   = None
 		self.square_corner_velocity = None
-		
+		self.pressure_advance       = None
+		self.waiting_bedmesh        = False
+		self.filament_detected = None
+		self.filament_sensor_enabled = None
+		self.lcd_instance = lcd_instance
+
 		self.op = MoonrakerSocket(URL, 80, API_Key)
 		print(self.op.base_address)
 
@@ -276,7 +294,12 @@ class PrinterData:
 				"objects": {
 					"toolhead": [
 						"position"
-					]
+					],
+					"extruder": [
+						"pressure_advance"
+					],
+					"screws_tilt_adjust": None,
+					"bed_mesh": None
 				},
 				"response_template": {}
 			}
@@ -292,10 +315,8 @@ class PrinterData:
 
 	def klippy_callback(self, line):
 		klippyData = json.loads(line)
-		#print("klippy_callback:")
-		#print(json.dumps(klippyData, indent=2))
 		status = None
-		if 'result' in klippyData:
+		if 'result' in klippyData :
 			if 'status' in klippyData['result']:
 				status = klippyData['result']['status']
 		if 'params' in klippyData:
@@ -308,8 +329,16 @@ class PrinterData:
 						pass ## Filter out temperature responses
 					else:
 						self.response_callback(resp, 'response')
+						if resp.startswith("!! Move out of range"):
+							self.lcd_instance.write('premove.t3.pco=63488')
+							self.lcd_instance.write('premove.t3.txt=" MOVIMIENTO NO       PERMITIDO"')
+
+		if 'error' in klippyData and 'message' in klippyData['error'] and klippyData['error']['message'] == 'lcd_callback event not recognised 30':
+                        self.handle_lcd_event(30, 1)
+
 
 		if status:
+
 			if 'toolhead' in status:
 				if 'position' in status['toolhead']:
 					if self.current_position.x != status['toolhead']['position'][0]:
@@ -324,7 +353,7 @@ class PrinterData:
 					if self.current_position.e != status['toolhead']['position'][3]:
 						self.current_position.e = status['toolhead']['position'][3]
 						self.current_position.updated = True
-					
+
 				if 'homed_axes' in status['toolhead']:
 					if 'x' in status['toolhead']['homed_axes']:
 						self.current_position.home_x = True
@@ -338,19 +367,23 @@ class PrinterData:
 						self.current_position.home_z = True
 					else:
 						self.current_position.home_z = False
-				
+
 				if 'max_velocity' in status['toolhead']:
 					if self.max_velocity != status['toolhead']['max_velocity']:
 						self.max_velocity = status['toolhead']['max_velocity']
 				if 'max_accel' in status['toolhead']:
 					if self.max_accel != status['toolhead']['max_accel']:
 						self.max_accel = status['toolhead']['max_accel']
-				if 'max_accel_to_decel' in status['toolhead']:
-					if self.max_accel_to_decel != status['toolhead']['max_accel_to_decel']:
-						self.max_accel_to_decel = status['toolhead']['max_accel_to_decel']
+				if 'minimum_cruise_ratio' in status['toolhead']:
+					if self.minimum_cruise_ratio != status['toolhead']['minimum_cruise_ratio'] * 100:
+						self.minimum_cruise_ratio = status['toolhead']['minimum_cruise_ratio'] * 100
 				if 'square_corner_velocity' in status['toolhead']:
-					if self.square_corner_velocity != status['toolhead']['square_corner_velocity']:
-						self.square_corner_velocity = status['toolhead']['square_corner_velocity']
+					if self.square_corner_velocity != status['toolhead']['square_corner_velocity'] * 10:
+						self.square_corner_velocity = status['toolhead']['square_corner_velocity'] * 10
+			if'extruder' in status:
+				if 'pressure_advance' in status['extruder']:
+					if self.pressure_advance != status['extruder']['pressure_advance'] * 1000:
+						self.pressure_advance = status['extruder']['pressure_advance'] * 1000
 
 			if 'configfile' in status:
 				if 'config' in status['configfile']:
@@ -362,6 +395,40 @@ class PrinterData:
 						if 'path' in status['configfile']['config']['virtual_sdcard']:
 							self.file_path = status['configfile']['config']['virtual_sdcard']['path']
 
+		status = None
+		if "params" in klippyData and "status" in klippyData["params"]:
+			status = klippyData["params"]["status"]
+		elif "result" in klippyData and "status" in klippyData["result"]:
+			status = klippyData["result"]["status"]
+
+		if status:
+			if "screws_tilt_adjust" in status and not getattr(self, "_screws_done", False) and getattr(self, "_running_screws_tilt", False):
+				data = status["screws_tilt_adjust"]
+				if data and "results" in data:
+					screws = []
+					for name, vals in data["results"].items():
+						sign = vals.get("sign", "")
+						adjust = vals.get("adjust", "")
+						z = vals.get("z", 0.0)
+						is_base = vals.get("is_base", False)
+						screws.append((name, sign, adjust, z, is_base))
+
+					if screws and self.response_callback:
+						self.response_callback(screws, "screws_tilt")
+						self._screws_done = True
+						self._running_screws_tilt = False
+						return
+
+		if "params" in klippyData and "status" in klippyData["params"]:
+			status = klippyData["params"]["status"]
+			if "bed_mesh" in status:
+				mesh = status["bed_mesh"].get("probed_matrix", [])
+				if mesh and self.response_callback:
+					print(">>> Probed mesh recibida:", mesh)
+					self.response_callback(mesh, "bed_mesh")
+
+
+
 	def ishomed(self):
 		if self.current_position.home_x and self.current_position.home_y and self.current_position.home_z:
 			return True
@@ -369,9 +436,28 @@ class PrinterData:
 			self.ks.queue_line(self.klippy_home)
 			return False
 
+	def emergency_stop(self):
+		try:
+			url = "http://127.0.0.1:7125/printer/emergency_stop"
+			requests.post(url, timeout=2)
+		except:
+			pass
+
 	def offset_z(self, new_offset):
 		self.BABY_Z_VAR = new_offset
 		self.sendGCode('ACCEPT')
+
+	def baby_step(self, adjust):
+		gcode = f"SET_GCODE_OFFSET Z_ADJUST={adjust} MOVE=1"
+		self.sendGCode(gcode)
+		self.BABY_Z_VAR += adjust
+
+	def run_screws_tilt(self):
+		self.sendGCode("G28")
+		self._screws_done = False
+		self._running_screws_tilt = True
+		self.screws_data = {}
+		self.sendGCode("SCREWS_TILT_CALCULATE")
 
 	def add_mm(self, axs, new_offset):
 		gc = 'TESTZ Z={}'.format(new_offset)
@@ -384,10 +470,24 @@ class PrinterData:
 		self.sendGCode(gc)
 
 	def probe_calibrate(self):
-		if self.ishomed() == False:
-			self.sendGCode('G28')
+		#if self.ishomed() == False:
+		self.sendGCode('G28')
 		self.sendGCode('PROBE_CALIBRATE')
-		self.sendGCode('G1 Z0.0')
+		#self.sendGCode('G1 Z0.0')
+
+	    # ---------- Raspberry Pi Power Control ----------
+	def reboot_pi(self):
+		os.system("reboot")
+
+	def shutdown_pi(self):
+		os.system("shutdown -h now")
+
+	def restart_klipperlcd(self):
+		os.system("systemctl restart klipperlcd.service")
+
+	def stop_klipperlcd(self):
+		os.system("systemctl stop klipperlcd.service")
+
 
 	# ------------- OctoPrint Function ----------
 
@@ -436,8 +536,10 @@ class PrinterData:
 		self.Y_MAX_POS = int(volume[1])
 		self.max_velocity           = toolhead['max_velocity']
 		self.max_accel              = toolhead['max_accel']
-		self.max_accel_to_decel     = toolhead['max_accel_to_decel']
+		self.minimum_cruise_ratio     = toolhead['minimum_cruise_ratio']
 		self.square_corner_velocity = toolhead['square_corner_velocity']
+		extruder = self.getREST('/printer/objects/query?extruder')['result']['status']['extruder']
+		self.pressure_advance = extruder['pressure_advance']
 
 	def get_gcode_store(self, count=100):
 		gcode_store = None
@@ -445,25 +547,27 @@ class PrinterData:
 			gcode_store = self.getREST('/server/gcode_store?count=%d' % count)['result']['gcode_store']
 		except:
 			print("GCode store read failed!")
-		
+
 		return gcode_store
-	
-	def get_macros(self, filter_internal = True):
+
+	def get_macros(self, filter_internal=True):
 		macros = []
 		try:
-			objects = self.getREST('/printer/objects/list')['result']['objects']
-		except:
-			print("Could not read macro objects!")
-		
-		for obj in objects:
-			if 'gcode_macro' in obj:
-				macro = obj.split(' ')[1]
+			config = self.getREST('/printer/objects/query?configfile')['result']['status']['configfile']['config']
+		except Exception as e:
+			print("Could not read macro config!", e)
+			return macros
+
+		for key in config:
+			if key.startswith("gcode_macro "):
+				macro = key.split("gcode_macro ")[1]
 				if filter_internal:
-					if macro[0] != '_':
+					if not macro.startswith("_"):
 						macros.append(macro)
 				else:
 					macros.append(macro)
-		return macros	
+		return macros
+
 
 	def GetFiles(self, refresh=False):
 		if not self.files or refresh:
@@ -477,32 +581,51 @@ class PrinterData:
 		return names
 
 	def update_variable(self):
-		if self.ks.connected == False:
+		if not self.ks.connected:
 			self.ks.klippyExit()
 			self.klippy_start()
 			return False
-		query = '/printer/objects/query?extruder&heater_bed&gcode_move&fan&print_stats&motion_report&toolhead'
+		query = '/printer/objects/query?extruder&heater_bed&gcode_move&fan&print_stats&motion_report&toolhead&led%20LED_Light&neopixel%20hotend_neopixel&filament_switch_sensor%20filament_sensor'
+
 		try:
 			data = self.getREST(query)['result']['status']
 		except:
 			print("Exception 431")
 			return False
-
-		#print("update_variable:")
-		#print(json.dumps(data, indent=2))
-
 		self.gcm = data['gcode_move']
-		self.z_offset = self.gcm['homing_origin'][2] #z offset
-		self.flow_percentage = self.gcm['extrude_factor'] * 100 #flow rate percent
-		self.absolute_moves = self.gcm['absolute_coordinates'] #absolute or relative
-		self.absolute_extrude = self.gcm['absolute_extrude'] #absolute or relative
-		self.speed = self.gcm['speed'] #current speed in mm/s
-		self.print_speed = self.gcm['speed_factor'] * 100 #print speed percent
-		self.bed = data['heater_bed'] #temperature, target
-		self.extruder = data['extruder'] #temperature, target
+		self.z_offset = self.gcm['homing_origin'][2]
+		self.flow_percentage = self.gcm['extrude_factor'] * 100
+		self.absolute_moves = self.gcm['absolute_coordinates']
+		self.absolute_extrude = self.gcm['absolute_extrude']
+		self.speed = self.gcm['speed']
+		self.print_speed = self.gcm['speed_factor'] * 100
+		self.bed = data['heater_bed']
+		self.extruder = data['extruder']
 		self.fan = data['fan']
 		self.toolhead = data['toolhead']
+		self.filament_sensor_enabled = data['filament_switch_sensor filament_sensor']['enabled']
+		self.filament_detected = data['filament_switch_sensor filament_sensor']['filament_detected']
 		Update = False
+
+		try:
+
+
+			if 'led LED_Light' in data and 'color_data' in data['led LED_Light']:
+				color_values = data['led LED_Light']['color_data'][0]
+				white_value = color_values[3]
+				self.light_percentage = int(white_value * 100)
+
+
+			if 'neopixel hotend_neopixel' in data and 'color_data' in data['neopixel hotend_neopixel']:
+				color_values = data['neopixel hotend_neopixel']['color_data'][0]
+				brightness = max(color_values)
+				self.light1_percentage = int(brightness * 100)
+				self.neopixel_r = int(color_values[0] * 100)
+				self.neopixel_g = int(color_values[1] * 100)
+				self.neopixel_b = int(color_values[2] * 100)
+
+		except:
+			pass
 		try:
 			if self.thermalManager['temp_bed']['celsius'] != int(self.bed['temperature']):
 				self.thermalManager['temp_bed']['celsius'] = int(self.bed['temperature'])
@@ -523,21 +646,24 @@ class PrinterData:
 				self.BABY_Z_VAR = self.z_offset
 				self.HMI_ValueStruct.offset_value = self.z_offset * 100
 				Update = True
-			
 			if self.max_velocity != self.toolhead['max_velocity']:
 				self.max_velocity = self.toolhead['max_velocity']
 				Update = True
 			if self.max_accel != self.toolhead['max_accel']:
 				self.max_accel = self.toolhead['max_accel']
 				Update = True
-			if self.max_accel_to_decel != self.toolhead['max_accel_to_decel']:
-				self.max_accel_to_decel = self.toolhead['max_accel_to_decel']
+			if self.minimum_cruise_ratio != self.toolhead['minimum_cruise_ratio'] * 100:
+				self.minimum_cruise_ratio = self.toolhead['minimum_cruise_ratio'] * 100
 				Update = True
-			if self.square_corner_velocity != self.toolhead['square_corner_velocity']:
-				self.square_corner_velocity = self.toolhead['square_corner_velocity']
+			if self.square_corner_velocity != self.toolhead['square_corner_velocity'] * 10:
+				self.square_corner_velocity = self.toolhead['square_corner_velocity'] * 10 #update_variable
+				Update = True
+			if self.pressure_advance != self.extruder['pressure_advance'] * 1000:
+				self.pressure_advance = self.extruder['pressure_advance'] * 1000
 				Update = True
 		except:
-			pass #missing key, shouldn't happen, fixes misses on conditionals ¯\_(ツ)_/¯
+			pass
+
 		try:
 			self.job_Info = self.getREST('/printer/objects/query?virtual_sdcard&print_stats')['result']['status']
 		except:
@@ -548,7 +674,21 @@ class PrinterData:
 			self.file_name = self.job_Info['print_stats']['filename']
 			self.status = self.job_Info['print_stats']['state']
 			self.HMI_flag.print_finish = self.getPercent() == 100.0
+			try:
+				ps = self.job_Info['print_stats']
+				self.print_duration = int(ps.get('print_duration', 0) or 0)
+				info = ps.get('info', {}) or {}
+				self.current_layer = int(info.get('current_layer', 0) or 0)
+				self.total_layer = int(info.get('total_layer', 0) or 0)
+			except Exception:
+				self.print_duration = 0
+				self.current_layer = 0
+				self.total_layer = 0
+
 		return Update
+
+	def update_lcd_status(self):
+		pass
 
 	def getState(self):
 		if self.job_Info:
@@ -606,12 +746,22 @@ class PrinterData:
 		self.flow_percentage = fl
 		self.sendGCode('M221 S%d' % fl)
 
-	def set_led(self, led):
-		self.led_percentage = led
-		if(led > 0):
-			self.sendGCode('SET_LED LED=top_LEDs WHITE=0.5 SYNC=0 TRANSMIT=1')
+	def set_light(self, light):
+		self.light_percentage = max(0, min(100, light))
+		power_value = self.light_percentage / 100.0
+		self.sendGCode('SET_LED LED=LED_Light WHITE=%s' % power_value)
+
+	def set_light1(self):
+		if(self.light1_percentage > 0):
+			self.sendGCode('SET_LED LED=hotend_neopixel RED=0 GREEN=0 BLUE=0')
 		else:
-			self.sendGCode('SET_LED LED=top_LEDs WHITE=0 SYNC=0 TRANSMIT=1')
+			self.sendGCode('SET_LED LED=hotend_neopixel RED=1 GREEN=1 BLUE=1')
+
+	def set_filament_sensor(self, val):
+        	if val == 1:
+            		self.sendGCode("SET_FILAMENT_SENSOR SENSOR=filament_sensor ENABLE=1")
+        	else:
+            		self.sendGCode("SET_FILAMENT_SENSOR SENSOR=filament_sensor ENABLE=0")
 
 	def set_fan(self, fan):
 		self.fan_percentage = fan
@@ -627,6 +777,23 @@ class PrinterData:
 
 		self.sendGCode(GCode)
 
+	def query_homed(self):
+		try:
+			url = self.op.base_address + '/printer/objects/query?toolhead'
+			r = requests.get(url, timeout=2)
+			j = r.json()
+			toolhead = j["result"]["status"].get("toolhead", {})
+			homed_axes = toolhead.get("homed_axes", "")
+			if isinstance(homed_axes, str):
+				return ('x' in homed_axes) and ('y' in homed_axes) and ('z' in homed_axes)
+			if isinstance(homed_axes, (list, tuple)):
+				return all(a in homed_axes for a in ('x','y','z'))
+			return False
+		except Exception as e:
+			print("query_homed error:", e)
+			return False
+
+
 	def moveRelative(self, axis, distance, speed):
 		self.sendGCode('%s \n%s %s%s F%s%s' % ('G91', 'G1', axis, distance, speed,
 			'\nG90' if self.absolute_moves else ''))
@@ -636,9 +803,11 @@ class PrinterData:
 			'\nG91' if not self.absolute_moves else ''))
 
 	def sendGCode(self, gcode):
+
 		self.postREST('/printer/gcode/script', json={'script': gcode})
 		if self.response_callback:
 			self.response_callback(gcode, 'command')
+			print(f"Comando G-code enviado con éxito: {gcode}")
 
 	def disable_all_heaters(self):
 		self.setExtTemp(0)

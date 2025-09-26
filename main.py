@@ -1,18 +1,21 @@
+import os
 import getopt
 import sys
 import time
 import base64
+import subprocess
 from threading import Thread
 from datetime import timedelta
 
 from printer import PrinterData
 from lcd import LCD, _printerData
 
+
 class KlipperLCD ():
     def __init__(self):
-        self.lcd = LCD("/dev/ttyAMA0", callback=self.lcd_callback)
+        self.lcd = LCD("/dev/ttyUSB0", callback=self.lcd_callback)
         self.lcd.start()
-        self.printer = PrinterData('XXXXXX', URL=("127.0.0.1"), klippy_sock='/home/pi/printer_data/comms/klippy.sock', callback=self.printer_callback)
+        self.printer = PrinterData('XXXXXX', URL=("127.0.0.1"), klippy_sock='/home/pi/printer_data/comms/klippy.sock', callback=self.printer_callback, lcd_instance=self.lcd)
         self.running = False
         self.wait_probe = False
         self.thumbnail_inprogress = False
@@ -32,9 +35,22 @@ class KlipperLCD ():
 
         print(self.printer.MACHINE_SIZE)
         print(self.printer.SHORT_BUILD_VERSION)
-        self.lcd.write("information.size.txt=\"%s\"" % self.printer.MACHINE_SIZE)
-        self.lcd.write("information.sversion.txt=\"%s\"" % self.printer.SHORT_BUILD_VERSION)
-        self.lcd.write("page main")
+        self.lcd.about_machine(self.printer.MACHINE_SIZE, self.printer.SHORT_BUILD_VERSION)
+
+        mem_addr = 150
+        if self.printer.MACHINE_SIZE == "300x300x400":
+            new_val = 2
+        elif self.printer.MACHINE_SIZE == "240x240x260":
+            new_val = 1
+        else:
+            new_val = 0
+
+        current_val = self.lcd.read_value("boot.va2.val", mem_addr)
+        if current_val != new_val:
+            self.lcd.write(f"boot.va2.val={new_val}")
+            self.lcd.write(f"wepo boot.va2.val,{mem_addr}")
+            self.lcd.write("page main")
+
 
     def start(self):
         print("KlipperLCD start")
@@ -59,29 +75,101 @@ class KlipperLCD ():
             data.bed           = self.printer.thermalManager['temp_bed']['celsius']
             data.state         = self.printer.getState()
             data.percent       = self.printer.getPercent()
-            data.duration      = self.printer.duration()
+            duration = self.printer.print_duration
+            if duration > 0:
+                total_minutes = round(duration / 60)
+                hours = total_minutes // 60
+                minutes = total_minutes % 60
+                data.duration = f"{int(hours)}h {int(minutes)}m"
+            else:
+                data.duration = "0h 0m"
+            data.current_layer = self.printer.current_layer
+            data.total_layer   = self.printer.total_layer
             data.remaining     = self.printer.remain()
             data.feedrate      = self.printer.print_speed
             data.flowrate      = self.printer.flow_percentage
             data.fan           = self.printer.thermalManager['fan_speed'][0]
+            data.light         = self.printer.light_percentage
+            data.light1        = self.printer.light1_percentage
+            data.neo_r         = self.printer.neopixel_r
+            data.neo_g         = self.printer.neopixel_g
+            data.neo_b         = self.printer.neopixel_b
+            data.filament_detected       = self.printer.filament_detected
+            data.filament_sensor_enabled = self.printer.filament_sensor_enabled
             data.x_pos         = self.printer.current_position.x
             data.y_pos         = self.printer.current_position.y
             data.z_pos         = self.printer.current_position.z
             data.z_offset      = self.printer.BABY_Z_VAR
+            data.MACHINE_SIZE  = self.printer.MACHINE_SIZE
             data.file_name     = self.printer.file_name
-            data.max_velocity           = self.printer.max_velocity          
-            data.max_accel              = self.printer.max_accel             
-            data.max_accel_to_decel     = self.printer.max_accel_to_decel    
+            data.max_velocity           = self.printer.max_velocity
+            data.max_accel              = self.printer.max_accel
+            data.minimum_cruise_ratio   = self.printer.minimum_cruise_ratio
             data.square_corner_velocity = self.printer.square_corner_velocity
+            data.pressure_advance       = int (self.printer.pressure_advance)
+            data.extrude_mintemp = self.printer.EXTRUDE_MINTEMP
 
             self.lcd.data_update(data)
-                
+
+            FLAG_FILE = "/tmp/.klipperlcd_fw_update"
+
+            if os.path.exists(FLAG_FILE):
+                self.lcd.send_wait_variable()
+                subprocess.run(["sudo", "rm", FLAG_FILE], check=True)
+
+
             time.sleep(2)
 
     def printer_callback(self, data, data_type):
+
+        if data_type == 'response' and data.startswith("RESPOND"):
+            try:
+                 if "MSG=" in data:
+                     message_part = data.split("MSG=", 1)[1]
+                     message_to_send = message_part.strip().strip('"')
+                     self.lcd.write(message_to_send)
+                     return
+            except Exception as e:
+                print(f"Error al procesar el mensaje personalizado: {e}")
+
+        if data_type == 'response' and "jose" in data:
+            self.lcd.write("page adjustspeed")
+        if data_type == 'response' and "main" in data:
+            self.lcd.write("page adjustzoffset")
+        if data_type == 'response' and "boot" in data:
+            self.lcd.write("page boot")
+        if data_type == 'response' and "beep" in data:
+            self.lcd.write("beep 1000")
+            return
+
+
         msg = self.lcd.format_console_data(data, data_type)
         if msg:
             self.lcd.write_console(msg)
+
+
+        if 'status' in data:
+            if 'print_stats' in data['status']:
+                print_stats = data['status']['print_stats']
+                if 'print_duration' in print_stats:
+                    self.printer.print_duration = print_stats['print_duration']
+                if 'info' in print_stats:
+                    if 'current_layer' in print_stats['info']:
+                        self.printer.current_layer = print_stats['info']['current_layer']
+                    if 'total_layer' in print_stats['info']:
+                        self.printer.total_layer = print_stats['info']['total_layer']
+
+        if data_type == "screws_tilt":
+            screws = data
+            self.lcd.show_screws_data(screws)
+
+        if data_type == "bed_mesh":
+            self.lcd.show_bed_mesh(data)
+
+        if data_type == "lcd_command":
+            self.lcd.write(data)
+
+
 
     def show_thumbnail(self):
         if self.printer.file_path and (self.printer.file_name or self.lcd.files[self.lcd.selected_file]):
@@ -92,12 +180,12 @@ class KlipperLCD ():
                 file_name = self.printer.file_name
             else:
                 print("ERROR: gcode file not known")
-            
+
             file = self.printer.file_path + "/" + file_name
 
             # Reading file
             print(file)
-            f = open(file, "r")
+            f = open(os.path.expanduser(file), "r")
             if not f:
                 f.close()
                 print("File could not be opened: %s" % file)
@@ -125,7 +213,7 @@ class KlipperLCD ():
                 # Decode Base64
                 img = base64.b64decode(b64)        
                 
-                # Write thumbnail to LCD
+                #Write thumbnail to LCD
                 self.lcd.write_thumbnail(img)
             else:
                 self.lcd.clear_thumbnail()
@@ -138,12 +226,28 @@ class KlipperLCD ():
     def lcd_callback(self, evt, data=None):
         if evt == self.lcd.evt.HOME:
             self.printer.home(data)
+
         elif evt == self.lcd.evt.MOVE_X:
-            self.printer.moveRelative('X', data, 4000)
+            if self.printer.query_homed():
+                self.printer.moveRelative('X', data, 4000)
+            else:
+                self.lcd.write("warn_move.va3.val=1")
+                self.lcd.write("page warn_move")
+
         elif evt == self.lcd.evt.MOVE_Y:
-            self.printer.moveRelative('Y', data, 4000)
+            if self.printer.query_homed():
+                self.printer.moveRelative('Y', data, 4000)
+            else:
+                self.lcd.write("warn_move.va3.val=1")
+                self.lcd.write("page warn_move")
+
         elif evt == self.lcd.evt.MOVE_Z:
-            self.printer.moveRelative('Z', data, 600)
+            if self.printer.query_homed():
+                self.printer.moveRelative('Z', data, 600)
+            else:
+                self.lcd.write("warn_move.va3.val=1")
+                self.lcd.write("page warn_move")
+
         elif evt == self.lcd.evt.MOVE_E:
             print(data)
             self.printer.moveRelative('E', data[0], data[1])
@@ -177,49 +281,59 @@ class KlipperLCD ():
         elif evt == self.lcd.evt.FLOW:
             self.printer.set_flow(data)
         elif evt == self.lcd.evt.PROBE:
-            if data == None:
-                self.printer.probe_calibrate()
-                self.wait_probe = True
+            if data is None:
+                self.printer.sendGCode("G28")
+                self.printer.sendGCode("PROBE_CALIBRATE")
             else:
                 self.printer.probe_adjust(data)
-        elif evt == self.lcd.evt.PROBE_COMPLETE:
-            self.wait_probe = False
-            print("Save settings!")
-            self.printer.sendGCode('ACCEPT')
-            self.printer.sendGCode('G1 F1000 Z15.0')
-            print("Calibrate!")
-            self.printer.sendGCode('BED_MESH_CALIBRATE PROFILE=default METHOD=automatic')
-        elif evt == self.lcd.evt.PROBE_BACK:
-            print("BACK!")
-            self.printer.sendGCode('ACCEPT')
-            self.printer.sendGCode('G1 F1000 Z15.0')
-            self.printer.sendGCode('SAVE_CONFIG')
-        elif evt == self.lcd.evt.BED_MESH:
-            pass
+        elif evt == self.lcd.evt.BABYSTEP:
+            self.printer.baby_step(data)
+
+        #elif evt == self.lcd.evt.BED_MESH:
+            #pass
         elif evt == self.lcd.evt.LIGHT:
-            self.printer.set_led(data)
+            self.printer.set_light(data)
+        elif evt == self.lcd.evt.LIGHT1:
+            self.printer.set_light1()
         elif evt == self.lcd.evt.FAN:
             self.printer.set_fan(data)
+        elif evt == self.lcd.evt.FILAMENT_SENSOR:
+            self.printer.set_filament_sensor(data)
         elif evt == self.lcd.evt.MOTOR_OFF:
             self.printer.sendGCode('M18')
         elif evt == self.lcd.evt.ACCEL:
-            #print("SET_VELOCITY_LIMIT ACCEL=%d" % data)
             self.printer.sendGCode("SET_VELOCITY_LIMIT ACCEL=%d" % data)
-        elif evt == self.lcd.evt.ACCEL_TO_DECEL:
-            #print("SET_VELOCITY_LIMIT ACCEL_TO_DECEL=%d" % data)
-            self.printer.sendGCode("SET_VELOCITY_LIMIT ACCEL_TO_DECEL=%d" % data)
+        elif evt == self.lcd.evt.MINIMUM_CRUISE_RATIO:
+            self.printer.sendGCode("SET_VELOCITY_LIMIT MINIMUM_CRUISE_RATIO=%.3f" % data)
         elif evt == self.lcd.evt.VELOCITY:
-            #print("SET_VELOCITY_LIMIT VELOCITY=%d" % data)
             self.printer.sendGCode("SET_VELOCITY_LIMIT VELOCITY=%d" % data)
         elif evt == self.lcd.evt.SQUARE_CORNER_VELOCITY:
-            #print(data)
-            print("SET_VELOCITY_LIMIT SQUARE_CORNER_VELOCITY=%.1f" % data)
             self.printer.sendGCode("SET_VELOCITY_LIMIT SQUARE_CORNER_VELOCITY=%.1f" % data)
+        elif evt == self.lcd.evt.PRESSURE_ADVANCE:
+            self.printer.sendGCode("SET_PRESSURE_ADVANCE ADVANCE=%.3f" % data)
         elif evt == self.lcd.evt.CONSOLE:
+            if data == "BED_MESH_CALIBRATE":
+                self.printer.waiting_bedmesh = True
+                self.printer.sendGCode('G28')
             self.printer.sendGCode(data)
+        elif evt == self.lcd.evt.REBOOT_PI:
+            self.printer.reboot_pi()
+        elif evt == self.lcd.evt.SHUTDOWN_PI:
+            self.printer.shutdown_pi()
+        elif evt == self.lcd.evt.RESTART_LCD:
+            self.printer.restart_klipperlcd()
+        elif evt == self.lcd.evt.STOP_LCD:
+            self.printer.stop_klipperlcd()
+        elif evt == self.lcd.evt.SCREWS_TILT:
+            self.printer.run_screws_tilt()
+        elif evt == self.lcd.evt.EMERGENCY_STOP:
+            self.printer.emergency_stop()
+
+
         else:
             print("lcd_callback event not recognised %d" % evt)
 
 if __name__ == "__main__":
+
     x = KlipperLCD()
     x.start()
