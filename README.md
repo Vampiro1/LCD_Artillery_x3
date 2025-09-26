@@ -51,13 +51,10 @@ Quite simple, just remember to cross RX and TX on the LCD and the USB/UART HW.
 </p>
 
 ## Update the LCD screen firmware
-1. Copy the LCD screen firmware `LCD/20240125.tft` to the root of a FAT32 formatted micro-SD card.
+1. Copy the LCD screen firmware `Firm_Update/141025.tft` to the root of a FAT32 formatted micro-SD card.
 2. Make sure the LCD screen is powered off.
 3. Insert the micro-SD card into the LCD screens SD card holder. Back-cover needs to be removed.
 4. Power on the LCD screen and wait for screen to say `Update Successed!`
-
-A more detailed guide on LCD screen firmware update can be found on the [Elegoo web-pages](https://www.elegoo.com/blogs/3d-printing/elegoo-neptune-3-pro-plus-max-fdm-3d-printer-support-files).
-
 
 ## Enable the UART
 > **_Note_**: You can safely skip this section if you wired the display through a USB to UART converter
