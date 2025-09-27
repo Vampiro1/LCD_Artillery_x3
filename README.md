@@ -121,23 +121,39 @@ If the path of `main.py` is something else than `/home/pi/KlipperLCD/main.py` or
 
 Enable the service to automatically start at boot:
 
-sudo chmod +x main.py
-sudo chmod +x KlipperLCD.service
-sudo mv KlipperLCD.service /etc/systemd/system/KlipperLCD.service
-sudo chmod 644 /etc/systemd/system/KlipperLCD.service
-sudo systemctl daemon-reload
-sudo systemctl enable KlipperLCD.service
-echo -e "\n[system_service KlipperLCD]\nservice: KlipperLCD" >> /home/pi/printer_data/config/moonraker.conf
-echo -e "\n[update_manager KlipperLCD]" >> /home/pi/printer_data/config/moonraker.conf
-echo "type: git_repo" >> /home/pi/printer_data/config/moonraker.conf
-echo "path: /home/pi/KlipperLCD" >> /home/pi/printer_data/config/moonraker.conf
-echo "origin: https://github.com/Vampiro1/LCD_Artillery_x3.git" >> /home/pi/printer_data/config/moonraker.conf
-echo "primary_branch: main" >> /home/pi/printer_data/config/moonraker.conf
-echo "managed_services: KlipperLCD" >> /home/pi/printer_data/config/moonraker.conf
-sudo systemctl restart moonraker
-cd /home/pi/KlipperLCD
-ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft LCD.tft
-sudo reboot
+        sudo chmod +x main.py
+        
+        sudo chmod +x KlipperLCD.service
+        
+        sudo mv KlipperLCD.service /etc/systemd/system/KlipperLCD.service
+        
+        sudo chmod 644 /etc/systemd/system/KlipperLCD.service
+        
+        sudo systemctl daemon-reload
+        
+        sudo systemctl enable KlipperLCD.service
+        
+        echo -e "\n[system_service KlipperLCD]\nservice: KlipperLCD" >> /home/pi/printer_data/config/moonraker.conf
+        
+        echo -e "\n[update_manager KlipperLCD]" >> /home/pi/printer_data/config/moonraker.conf
+        
+        echo "type: git_repo" >> /home/pi/printer_data/config/moonraker.conf
+        
+        echo "path: /home/pi/KlipperLCD" >> /home/pi/printer_data/config/moonraker.conf
+        
+        echo "origin: https://github.com/Vampiro1/LCD_Artillery_x3.git" >> /home/pi/printer_data/config/moonraker.conf
+        
+        echo "primary_branch: main" >> /home/pi/printer_data/config/moonraker.conf
+
+        
+        echo "managed_services: KlipperLCD" >> /home/pi/printer_data/config/moonraker.conf
+        sudo systemctl restart moonraker
+        
+        cd /home/pi/KlipperLCD
+        
+        ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft LCD.tft
+        
+        sudo reboot
 
 ### Run the code
 Once the LCD touch screen is wired to the Raspberry Pi, Klipper socket API is enabled and the KlipperLCD class is configured according to your wiring you can fire up the code!
