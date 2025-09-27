@@ -137,18 +137,6 @@ Enable the service to automatically start at boot:
 
         sudo systemctl enable KlipperLCD.service
         
-        echo -e "\n[system_service KlipperLCD]\nservice: KlipperLCD" >> /home/pi/printer_data/config/moonraker.conf
-        
-        echo -e "\n[update_manager KlipperLCD]" >> /home/pi/printer_data/config/moonraker.conf
-        
-        echo "type: git_repo" >> /home/pi/printer_data/config/moonraker.conf
-        
-        echo "path: /home/pi/KlipperLCD" >> /home/pi/printer_data/config/moonraker.conf
-        
-        echo "origin: https://github.com/Vampiro1/LCD_Artillery_x3.git" >> /home/pi/printer_data/config/moonraker.conf
-        
-        echo "primary_branch: main" >> /home/pi/printer_data/config/moonraker.con
-        
         cd /home/pi/KlipperLCD
         
         ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft LCD.tft
