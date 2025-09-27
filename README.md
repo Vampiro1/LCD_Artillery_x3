@@ -132,15 +132,16 @@ Enable the service to automatically start at boot:
     sudo systemctl daemon-reload
 
     sudo systemctl enable KlipperLCD.service
+    
+    cd /home/pi/KlipperLCD
+    ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft LCD.tft
 
     sudo reboot
 
 ### Run the code
 Once the LCD touch screen is wired to the Raspberry Pi, Klipper socket API is enabled and the KlipperLCD class is configured according to your wiring you can fire up the code!
 
-    cd /home/pi/KlipperLCD
-    ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft LCD.tft
-    python3 main.py
+        python3 main.py
 
 Congratulations! You can now use the touch screen!
 
