@@ -143,11 +143,7 @@ Enable the service to automatically start at boot:
         
         echo "origin: https://github.com/Vampiro1/LCD_Artillery_x3.git" >> /home/pi/printer_data/config/moonraker.conf
         
-        echo "primary_branch: main" >> /home/pi/printer_data/config/moonraker.conf
-
-        
-        echo "managed_services: KlipperLCD" >> /home/pi/printer_data/config/moonraker.conf
-        sudo systemctl restart moonraker
+        echo "primary_branch: main" >> /home/pi/printer_data/config/moonraker.con
         
         cd /home/pi/KlipperLCD
         
