@@ -149,14 +149,6 @@ Enable the service to automatically start at boot:
 
         sudo reboot
 
-
-### Run the code
-Once the LCD touch screen is wired to the Raspberry Pi, Klipper socket API is enabled and the KlipperLCD class is configured according to your wiring you can fire up the code!
-
-        python3 /home/pi/KlipperLCD/main.py
-
-Congratulations! You can now use the touch screen!
-
 ## Console
 The console is enabled by default and can be accessed by clicking center top of the main screen or by clicking the thumbnail area while printing.
 
