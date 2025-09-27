@@ -116,15 +116,6 @@ class KlipperLCD ():
 
 * Or if your Klipper socket is called something else, replace `klippy_sock` string `"/home/pi/printer_data/comms/klippy.sock"` with the path and name of your klipper socket file.
 
-### Run the code
-Once the LCD touch screen is wired to the Raspberry Pi, Klipper socket API is enabled and the KlipperLCD class is configured according to your wiring you can fire up the code!
-
-    cd /home/pi/KlipperLCD
-    ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft LCD.tft
-    python3 main.py
-
-Congratulations! You can now use the touch screen!
-
 ### Run KlipperLCD service at boot
 If the path of `main.py` is something else than `/home/pi/KlipperLCD/main.py` or your user is not `pi`. Open and edit `KlipperLCD.service` to fit your needs.
 
@@ -143,6 +134,15 @@ Enable the service to automatically start at boot:
     sudo systemctl enable KlipperLCD.service
 
     sudo reboot
+
+### Run the code
+Once the LCD touch screen is wired to the Raspberry Pi, Klipper socket API is enabled and the KlipperLCD class is configured according to your wiring you can fire up the code!
+
+    cd /home/pi/KlipperLCD
+    ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft LCD.tft
+    python3 main.py
+
+Congratulations! You can now use the touch screen!
 
 ## Console
 The console is enabled by default and can be accessed by clicking center top of the main screen or by clicking the thumbnail area while printing.
