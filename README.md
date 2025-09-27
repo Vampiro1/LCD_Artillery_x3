@@ -147,8 +147,6 @@ Enable the service to automatically start at boot:
         
         sudo systemctl restart moonraker
 
-        sudo reboot
-
 ## Console
 The console is enabled by default and can be accessed by clicking center top of the main screen or by clicking the thumbnail area while printing.
 
