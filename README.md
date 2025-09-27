@@ -123,14 +123,18 @@ Enable the service to automatically start at boot:
 
         sudo chmod +x main.py
         
+        sudo chmod +x firmw_update.py
+
+        sudo chmod +x firmw.py
+        
         sudo chmod +x KlipperLCD.service
         
-        sudo mv KlipperLCD.service /etc/systemd/system/KlipperLCD.service
+        sudo cp KlipperLCD.service /etc/systemd/system/KlipperLCD.service
         
         sudo chmod 644 /etc/systemd/system/KlipperLCD.service
         
         sudo systemctl daemon-reload
-        
+
         sudo systemctl enable KlipperLCD.service
         
         echo -e "\n[system_service KlipperLCD]\nservice: KlipperLCD" >> /home/pi/printer_data/config/moonraker.conf
