@@ -119,6 +119,8 @@ class KlipperLCD ():
 ### Run the code
 Once the LCD touch screen is wired to the Raspberry Pi, Klipper socket API is enabled and the KlipperLCD class is configured according to your wiring you can fire up the code!
 
+    cd /home/pi/KlipperLCD
+    ln -sf 141025usado.tft LCD.tft
     python3 main.py
 
 Congratulations! You can now use the touch screen!
