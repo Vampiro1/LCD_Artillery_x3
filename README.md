@@ -140,6 +140,10 @@ Enable the service to automatically start at boot:
         sudo systemctl daemon-reload
 
         sudo systemctl enable KlipperLCD.service
+
+        MOONRAKER_ASVC=/home/pi/printer_data/moonraker.asvc
+        
+        grep -qxF "KlipperLCD" $MOONRAKER_ASVC || echo "KlipperLCD" >> $MOONRAKER_ASVC
         
         sudo reboot
 
