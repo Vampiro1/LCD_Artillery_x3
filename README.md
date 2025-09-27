@@ -125,25 +125,18 @@ Enable the service to automatically start at boot:
         
         ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft LCD.tft
         
-        sudo chmod +x main.py
-        
-        sudo chmod +x firmw_update.py
-
-        sudo chmod +x firmw.py
-        
-        sudo chmod +x KlipperLCD.service
-        
+        chmod +x main.py firmw_update.py firmw.py KlipperLCD.service
         sudo cp KlipperLCD.service /etc/systemd/system/KlipperLCD.service
-        
         sudo chmod 644 /etc/systemd/system/KlipperLCD.service
-        
         sudo systemctl daemon-reload
-
         sudo systemctl enable KlipperLCD.service
-
+        sudo systemctl start KlipperLCD.service
+        
         MOONRAKER_ASVC=/home/pi/printer_data/moonraker.asvc
-        grep -qxF "KlipperLCD" $MOONRAKER_ASVC || echo "KlipperLCD" >> $MOONRAKER_ASVC
-
+        grep -qxF "KlipperLCD" $MOONRAKER_ASVC || echo "KlipperLCD" | sudo tee -a $MOONRAKER_ASVC > /dev/null
+        
+        CONF=/home/pi/printer_data/moonraker.conf
+        grep -q "\[update_manager KlipperLCD\]" $CONF || sudo tee -a $CONF > /dev/null <<EOL
         [update_manager KlipperLCD]
         type: git_repo
         path: ~/KlipperLCD
@@ -151,7 +144,10 @@ Enable the service to automatically start at boot:
         is_system_service: True
         EOL
         
+        sudo systemctl restart moonraker
+
         sudo reboot
+
 
 ### Run the code
 Once the LCD touch screen is wired to the Raspberry Pi, Klipper socket API is enabled and the KlipperLCD class is configured according to your wiring you can fire up the code!
