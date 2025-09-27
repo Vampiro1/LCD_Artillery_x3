@@ -95,7 +95,7 @@ Quite simple, just remember to cross RX and TX on the LCD and the USB/UART HW.
     pip install pyserial
 
 ### Get the code
-    git clone https://github.com/Vampiro1/Pantalla-artillery-x3-
+    git clone https://github.com/Vampiro1/LCD_Artillery_x3 KlipperLCD
     cd KlipperLCD
 
 ### Configure the code
