@@ -121,6 +121,10 @@ If the path of `main.py` is something else than `/home/pi/KlipperLCD/main.py` or
 
 Enable the service to automatically start at boot:
 
+        cd /home/pi/KlipperLCD
+        
+        ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft LCD.tft
+        
         sudo chmod +x main.py
         
         sudo chmod +x firmw_update.py
@@ -136,10 +140,6 @@ Enable the service to automatically start at boot:
         sudo systemctl daemon-reload
 
         sudo systemctl enable KlipperLCD.service
-        
-        cd /home/pi/KlipperLCD
-        
-        ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft LCD.tft
         
         sudo reboot
 
