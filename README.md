@@ -100,24 +100,6 @@ Quite simple, just remember to cross RX and TX on the LCD and the USB/UART HW.
     git clone https://github.com/Vampiro1/LCD_Artillery_x3 KlipperLCD
     cd KlipperLCD
 
-### Configure the code
-* Open `main.py` and find the `class KlipperLCD` declaration:
-```python
-class KlipperLCD ():
-    def __init__(self):
-        ...
-        LCD("/dev/ttyAMA0", callback=self.lcd_callback)
-        ...
-        PrinterData('XXXXXX', URL=("127.0.0.1"), klippy_sock='/home/pi/printer_data/comms/klippy.sock')
-```
-* If your UART is something other than the default `ttyAMA0`, replace the string `"/dev/ttyAMA0"` to match your UART selection. 
-
-
-    > **_Note_**: If using a USB to UART converter to connect your screen to Klipper, the converter usually shows up in Linux as `"/dev/ttyUSB0"`.
-
-
-* Or if your Klipper socket is called something else, replace `klippy_sock` string `"/home/pi/printer_data/comms/klippy.sock"` with the path and name of your klipper socket file.
-
 ### Run KlipperLCD service at boot
 If the path of `main.py` is something else than `/home/pi/KlipperLCD/main.py` or your user is not `pi`. Open and edit `KlipperLCD.service` to fit your needs.
 
