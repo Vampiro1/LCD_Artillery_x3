@@ -124,7 +124,7 @@ Enable the service to automatically start at boot:
     type: git_repo
     path: ~/KlipperLCD
     origin: https://github.com/Vampiro1/LCD_Artillery_x3.git
-    branch: main
+    branch: master
     is_system_service: True
     EOL
 
