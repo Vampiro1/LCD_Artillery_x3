@@ -106,20 +106,20 @@ If the path of `main.py` is something else than `/home/pi/KlipperLCD/main.py` or
 Enable the service to automatically start at boot:
 
         cd /home/pi/KlipperLCD
-        
+
         ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft LCD.tft
-        
+
         chmod +x main.py firmw_update.py firmw.py KlipperLCD.service
         sudo cp KlipperLCD.service /etc/systemd/system/KlipperLCD.service
         sudo chmod 644 /etc/systemd/system/KlipperLCD.service
         sudo systemctl daemon-reload
         sudo systemctl enable KlipperLCD.service
-                
+
         MOONRAKER_ASVC=/home/pi/printer_data/moonraker.asvc
         grep -qxF "KlipperLCD" $MOONRAKER_ASVC || echo "KlipperLCD" | sudo tee -a $MOONRAKER_ASVC > /dev/null
-        
-        CONF=/home/pi/printer_data/config/moonraker.conf
-        grep -q "\[update_manager KlipperLCD\]" $CONF || sudo tee -a $CONF > /dev/null <<EOL
+
+        CONF=/home/pi/printer_data/moonraker.conf
+        grep -q "\[update_manager KlipperLCD\]" $CONF || sudo tee -a $CONF > /dev/null <<-EOL
         [update_manager KlipperLCD]
         type: git_repo
         path: ~/KlipperLCD
@@ -127,9 +127,9 @@ Enable the service to automatically start at boot:
         branch: main
         is_system_service: True
         EOL
-        
-        sudo systemctl restart moonraker
-        sudo systemctl start KlipperLCD.service
+
+       sudo systemctl restart moonraker
+       sudo systemctl start KlipperLCD.service
 
 ## Console
 The console is enabled by default and can be accessed by clicking center top of the main screen or by clicking in the designated area while printing.
