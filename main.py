@@ -7,13 +7,39 @@ import subprocess
 from threading import Thread
 from datetime import timedelta
 
+import glob
+import serial
+
 from printer import PrinterData
 from lcd import LCD, _printerData
 
+def find_port():
+    possible_ports = []
+    possible_ports.extend(glob.glob('/dev/ttyUSB*'))
+    possible_ports.extend(glob.glob('/dev/ttyACM*'))
+    if os.path.exists('/dev/ttyAMA0'):
+        possible_ports.append('/dev/ttyAMA0')
+    if os.path.exists('/dev/ttyS0'):
+        possible_ports.append('/dev/ttyS0')
+    if os.path.exists('/dev/serial0'):
+        possible_ports.append('/dev/serial0')
+
+    for port in possible_ports:
+        try:
+            with serial.Serial(port, 921600, timeout=0.1) as ser:                                                             return port
+        except:
+            continue
+    return None
 
 class KlipperLCD ():
     def __init__(self):
-        self.lcd = LCD("/dev/ttyUSB0", callback=self.lcd_callback)
+
+        port = find_port()
+        if not port:
+            raise Exception("No se encontró ningún puerto válido para la pantalla")
+        self.lcd = LCD(port, callback=self.lcd_callback)
+
+        #self.lcd = LCD("/dev/ttyUSB0", callback=self.lcd_callback)
         self.lcd.start()
         self.printer = PrinterData('XXXXXX', URL=("127.0.0.1"), klippy_sock='/home/pi/printer_data/comms/klippy.sock', callback=self.printer_callback, lcd_instance=self.lcd)
         self.running = False
@@ -337,3 +363,4 @@ if __name__ == "__main__":
 
     x = KlipperLCD()
     x.start()
+
