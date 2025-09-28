@@ -114,8 +114,7 @@ Enable the service to automatically start at boot:
         sudo chmod 644 /etc/systemd/system/KlipperLCD.service
         sudo systemctl daemon-reload
         sudo systemctl enable KlipperLCD.service
-        sudo systemctl start KlipperLCD.service
-        
+                
         MOONRAKER_ASVC=/home/pi/printer_data/moonraker.asvc
         grep -qxF "KlipperLCD" $MOONRAKER_ASVC || echo "KlipperLCD" | sudo tee -a $MOONRAKER_ASVC > /dev/null
         
@@ -130,6 +129,7 @@ Enable the service to automatically start at boot:
         EOL
         
         sudo systemctl restart moonraker
+        sudo systemctl start KlipperLCD.service
 
 ## Console
 The console is enabled by default and can be accessed by clicking center top of the main screen or by clicking in the designated area while printing.
