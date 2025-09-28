@@ -150,7 +150,7 @@ Enable the service to automatically start at boot:
         sudo systemctl restart moonraker
 
 ## Console
-The console is enabled by default and can be accessed by clicking center top of the main screen or by clicking the thumbnail area while printing.
+The console is enabled by default and can be accessed by clicking center top of the main screen or by clicking in the designated area while printing.
 
 The console enables sending commands and will display all gcode responses and information from Klipper normally found in the console tab in Mainsail or Fluidd.
 
