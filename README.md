@@ -1,7 +1,7 @@
 # KlipperLCD (for Artillery X3 plus/Pro LCD screen)
 Want to run Klipper on your Artillery x3 Plus/Pro? And still want to be able to use your Artillery x3 Plus/Pro LCD touch screen?
 
-# .[GHITHUB]..       (https://github.com/Vampiro1/LCD_Artillery_x3).
+# [GHITHUB](https://github.com/Vampiro1/LCD_Artillery_x3)
 
 Take a look at this python service for the Elegoo Neptune 3 Pro LCD! Running together with Klipper3d and Moonraker!
 
