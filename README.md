@@ -162,7 +162,7 @@ The console enables sending commands and will display all gcode responses and in
 
 ## Thumbnails
 KlipperLCD also supports thumbnails!
-set the laminator to 300x300
+set the slicer to 300x300
 
 Follow this guide to enable thumbnails in your slicer: https://klipperscreen.readthedocs.io/en/latest/Thumbnails/
 
