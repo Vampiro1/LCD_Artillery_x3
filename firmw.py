@@ -4,30 +4,46 @@ import os
 import subprocess
 import glob
 
-PORT = '/dev/ttyUSB0'
 FILE_PATH = '/home/pi/KlipperLCD/LCD.tft'
 DOWNLOAD_BAUD = 921600
 USADO_SUFFIX = "usado"
 
-def connect_to_screen(port):
-    connect_bauds = [9600,115200,19200,38400,57600,230400,256000,512000,921600,4800,2400]
-    for baud in connect_bauds:
+def find_port():
+    possible_ports = []
+    possible_ports.extend(glob.glob('/dev/ttyUSB*'))
+    possible_ports.extend(glob.glob('/dev/ttyACM*'))
+    if os.path.exists('/dev/ttyAMA0'):
+        possible_ports.append('/dev/ttyAMA0')
+    if os.path.exists('/dev/ttyS0'):
+        possible_ports.append('/dev/ttyS0')
+    if os.path.exists('/dev/serial0'):
+        possible_ports.append('/dev/serial0')
+
+    for port in possible_ports:
         try:
-            with serial.Serial(port, baud, timeout=0.1) as ser:
-                connect_cmd = bytes.fromhex(
-                    "44 52 41 4B 4A 48 53 55 59 44 47 42 4E 43 4A 48 47 4A 4B 53 48 42 44 4E FF FF FF 00 FF FF FF 63 6F 6E 6E 65 63 74 FF FF FF"
-                )
-                ser.write(connect_cmd)
-                time.sleep((1000000/baud+30)/1000)
-                response = ser.read(1024)
-                if b'comok' in response:
-                    return baud
+            with serial.Serial(port, 921600, timeout=0.1) as ser:
+                return port
         except:
             continue
     return None
 
+def connect_to_screen(port):
+    baud = 921600
+    try:
+        with serial.Serial(port, baud, timeout=0.1) as ser:
+            connect_cmd = bytes.fromhex(
+                "44 52 41 4B 4A 48 53 55 59 44 47 42 4E 43 4A 48 47 4A 4B 53 48 42 44 4E FF FF FF 00 FF FF FF 63 6F 6E 6E 65 63 74 FF FF FF"
+            )
+            ser.write(connect_cmd)
+            time.sleep((1000000/baud+30)/1000)
+            response = ser.read(1024)
+            if b'comok' in response:
+                return baud
+    except:
+        pass
+    return None
+
 def send_download_command(port, file_path, connect_baud, download_baud):
-    # CORRECCIÓN: Resolver el symlink a la ruta real antes de usar os.path.getsize
     real_file_path = os.path.realpath(file_path)
     file_size = os.path.getsize(real_file_path)
 
@@ -70,12 +86,17 @@ def mark_as_used():
 def main():
     subprocess.run(["sudo", "systemctl", "stop", "klipperlcd.service"])
     time.sleep(1)
+    
+    port = find_port()
+    if not port:
+        subprocess.run(["sudo", "systemctl", "start", "klipperlcd.service"])
+        return
 
-    connect_baud = connect_to_screen(PORT)
+    connect_baud = connect_to_screen(port)
 
     update_success = False
     if connect_baud:
-        update_success = send_download_command(PORT, FILE_PATH, connect_baud, DOWNLOAD_BAUD)
+        update_success = send_download_command(port, FILE_PATH, connect_baud, DOWNLOAD_BAUD)
 
     if update_success:
         mark_as_used()
