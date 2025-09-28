@@ -1,7 +1,7 @@
 # KlipperLCD (for Artillery X3 plus/Pro LCD screen)
 Want to run Klipper on your Artillery x3 Plus/Pro? And still want to be able to use your Artillery x3 Plus/Pro LCD touch screen?
 
-# .[GHITHUB]. .(https://github.com/Vampiro1/LCD_Artillery_x3).
+# .[GHITHUB]..       (https://github.com/Vampiro1/LCD_Artillery_x3).
 
 Take a look at this python service for the Elegoo Neptune 3 Pro LCD! Running together with Klipper3d and Moonraker!
 
@@ -162,6 +162,7 @@ The console enables sending commands and will display all gcode responses and in
 
 ## Thumbnails
 KlipperLCD also supports thumbnails!
+set the laminator to 300x300
 
 Follow this guide to enable thumbnails in your slicer: https://klipperscreen.readthedocs.io/en/latest/Thumbnails/
 
