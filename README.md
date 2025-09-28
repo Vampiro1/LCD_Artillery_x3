@@ -118,7 +118,7 @@ Enable the service to automatically start at boot:
     MOONRAKER_ASVC=/home/pi/printer_data/moonraker.asvc
     grep -qxF "KlipperLCD" $MOONRAKER_ASVC || echo "KlipperLCD" | sudo tee -a $MOONRAKER_ASVC > /dev/null
 
-    CONF=/home/pi/printer_data/moonraker.conf
+    CONF=/home/pi/printer_data/config/moonraker.conf
     grep -q "\[update_manager KlipperLCD\]" $CONF || sudo tee -a $CONF > /dev/null <<-EOL
     [update_manager KlipperLCD]
     type: git_repo
