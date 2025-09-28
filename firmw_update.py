@@ -5,7 +5,7 @@ import glob
 from datetime import datetime
 
 GITHUB_USER = "Vampiro1"
-GITHUB_REPO = "Pantalla-artillery-x3-"
+GITHUB_REPO = "LCD_Artillery_x3"
 FIRMWARE_FOLDER = "/home/pi/KlipperLCD/firmware"
 LOCAL_SYMLINK = "/home/pi/KlipperLCD/LCD.tft"
 GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_USER}/{GITHUB_REPO}/contents/firmware"
