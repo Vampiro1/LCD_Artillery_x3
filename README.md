@@ -16,7 +16,7 @@ Take a look at this python service for the Artillery x3 Plus/Pro LCD! Running to
 * A Artillery x3 Plus/Pro with LCD screen.
 * A Raspberry Pi or similar SBC to run Klipper. I suggest using the [Klipper Installation And Update Helper (KIAUH)](https://github.com/dw-0/kiauh) to setup and install Klipper, Moonraker and the web user interface of choice ([Fluidd](https://docs.fluidd.xyz/)/[Mainsail](https://docs.mainsail.xyz/)).
 * Some re-wiring of the LCD screen to connect it to one of the UARTs availible on your Raspberry Pi / SBC or through a USB to UART converter.
-* Then you can follow this guide to enable your Neptune 3 Pro touch screen!
+* Then you can follow this guide to enable your Artillery x3 Plus/Pro touch screen!
 
 ## Wire the LCD
 When wiring your screen, you can either wire it directly to one of your Raspberry Pi / SBC availible UARTs or you can wire it through a USB to UART converter. Both options are described below, pick the option that suits your needs.
