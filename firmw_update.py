@@ -13,7 +13,7 @@ LOCAL_SYMLINK = "/home/pi/KlipperLCD/LCD.tft"
 FLAG_FILE = "/tmp/.klipperlcd_fw_update"
 USADO_SUFFIX = "usado"
 
-RELEASE_URL = "https://github.com/Vampiro1/LCD_Artillery_x3/releases/download/firmware/141025.zip"
+RELEASE_URL = "https://github.com/Vampiro1/LCD_Artillery_x3/releases/download/firmware/firmware.zip"
 
 def parse_version_to_date(version_str):
     try:
