@@ -92,58 +92,9 @@ Quite simple, just remember to cross RX and TX on the LCD and the USB/UART HW.
     
     The KLIPPER_ARGS should include `-a /home/pi/printer_data/comms/klippy.sock`. If not add it to the klipper.env file!
 
-### Install dependencies
-    sudo apt-get install python3-pip git
-    pip install pyserial
-
-### Get the code
-    git clone https://github.com/Vampiro1/LCD_Artillery_x3 KlipperLCD
-    cd KlipperLCD
-    LCD_DEST="/home/pi/KlipperLCD"
-    FIRMWARE_DEST="/home/pi/KlipperLCD/firmware"
-    mkdir -p "$FIRMWARE_DEST"
-    wget -O "$LCD_DEST/LCD.tft" "https://github.com/Vampiro1/LCD_Artillery_x3/releases/download/firmware/LCD.tft"
-    wget -O "$FIRMWARE_DEST/141025.zip" "https://github.com/Vampiro1/LCD_Artillery_x3/releases/download/firmware/141025.zip"
-    unzip -o "$FIRMWARE_DEST/141025.zip" -d "$FIRMWARE_DEST"
-    rm "$FIRMWARE_DEST/141025.zip"
-
-
-### Run KlipperLCD service at boot
-If the path of `main.py` is something else than `/home/pi/KlipperLCD/main.py` or your user is not `pi`. Open and edit `KlipperLCD.service` to fit your needs.
-
-Enable the service to automatically start at boot:
-
-    cd /home/pi/KlipperLCD
-
-    git update-index --assume-unchanged LCD.tft
-    find firmware/ -type f -print0 | xargs -0 git update-index --assume-unchanged
-
-    ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft LCD.tft
-
-    sudo cp KlipperLCD.service /etc/systemd/system/KlipperLCD.service
-    sudo chmod 644 /etc/systemd/system/KlipperLCD.service
-    sudo systemctl daemon-reload
-    sudo systemctl enable KlipperLCD.service
-
-    MOONRAKER_ASVC=/home/pi/printer_data/moonraker.asvc
-    grep -qxF "KlipperLCD" $MOONRAKER_ASVC || echo "KlipperLCD" | sudo tee -a $MOONRAKER_ASVC > /dev/null
-
-    CONF=/home/pi/printer_data/config/moonraker.conf
-    grep -q "\[update_manager KlipperLCD\]" $CONF || \
-    (echo "" | sudo tee -a $CONF > /dev/null; \
-    sudo tee -a $CONF > /dev/null <<-EOL
-    [update_manager KlipperLCD]
-    type: git_repo
-    path: ~/KlipperLCD
-    origin: https://github.com/Vampiro1/LCD_Artillery_x3.git
-    branch: master
-    is_system_service: True
-    EOL
-    )
-
-
-    sudo systemctl restart moonraker
-    sudo systemctl start KlipperLCD.service
+### Install service
+    chmod +x install.sh
+    ./install.sh
 
 
 ## Console
