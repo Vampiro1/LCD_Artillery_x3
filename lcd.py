@@ -1208,9 +1208,9 @@ class LCD:
 
     def _HardwareTest(self, data):
         if data[0] == 0x01:
-            subprocess.Popen(["sudo", "python3", "/home/pi/KlipperLCD/firmw_update.py"])
+            subprocess.Popen(["python3", "/home/pi/KlipperLCD/firmw_update.py"])
         elif data[0] == 0x02:
-            subprocess.Popen(["sudo", "python3", "/home/pi/KlipperLCD/firmw.py"])
+            subprocess.Popen(["python3", "/home/pi/KlipperLCD/firmw.py"])
         elif data[0] == 0x0f:
             pass
         else:
