@@ -8,10 +8,10 @@ pip3 install --upgrade pip
 pip3 install pyserial
 
 echo "=== Clonando repositorio ==="
-if [ ! -d "/home/pi/KlipperLCD" ]; then
-    git clone https://github.com/Vampiro1/LCD_Artillery_x3 /home/pi/KlipperLCD
-fi
-cd /home/pi/KlipperLCD
+cd /home/pi
+rm -rf KlipperLCD
+git clone https://github.com/Vampiro1/LCD_Artillery_x3 KlipperLCD
+cd KlipperLCD
 
 echo "=== Preparando firmware ==="
 FIRMWARE_DEST="/home/pi/KlipperLCD/firmware"
