@@ -109,7 +109,6 @@ Enable the service to automatically start at boot:
 
     ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft LCD.tft
 
-    chmod +x main.py firmw_update.py firmw.py KlipperLCD.service
     sudo cp KlipperLCD.service /etc/systemd/system/KlipperLCD.service
     sudo chmod 644 /etc/systemd/system/KlipperLCD.service
     sudo systemctl daemon-reload
