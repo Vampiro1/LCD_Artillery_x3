@@ -118,3 +118,7 @@ Follow this guide to enable thumbnails in your slicer: https://klipperscreen.rea
     <img src="img/thumb1.png" height="400">
     <img src="img/thumb2.png" height="400">
 </p>
+
+### Uninstall service
+    chmod +x uninstall.sh
+    ./uninstall.sh
