@@ -107,6 +107,9 @@ Enable the service to automatically start at boot:
 
     cd /home/pi/KlipperLCD
 
+    git update-index --assume-unchanged LCD.tft
+    find firmware/ -type f -print0 | xargs -0 git update-index --assume-unchanged
+
     ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft LCD.tft
 
     sudo cp KlipperLCD.service /etc/systemd/system/KlipperLCD.service
