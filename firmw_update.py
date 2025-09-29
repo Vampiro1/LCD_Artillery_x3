@@ -45,7 +45,7 @@ def get_latest_remote_firmware():
         return None
 
 def create_flag():
-    subprocess.run(["sudo", "touch", FLAG_FILE], check=True)
+    subprocess.run(["touch", FLAG_FILE], check=True)
 
 def cleanup_firmware_files():
     for f in glob.glob(os.path.join(FIRMWARE_FOLDER, "*.tft")):
@@ -84,8 +84,8 @@ def main():
     with open(local_path, "wb") as f:
         f.write(latest_data)
 
-    subprocess.run(["sudo", "rm", "-f", LOCAL_SYMLINK], check=False)
-    subprocess.run(["sudo", "ln", "-s", local_path, LOCAL_SYMLINK], check=True)
+    subprocess.run(["rm", "-f", LOCAL_SYMLINK], check=False)
+    subprocess.run(["ln", "-s", local_path, LOCAL_SYMLINK], check=True)
 
     create_flag()
 
