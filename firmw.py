@@ -84,13 +84,14 @@ def mark_as_used():
 
 
 def main():
+    port = find_port()
+    
+    if not port:
+        print("❌ No se pudo encontrar y/o conectar a un puerto serial disponible para la pantalla. Terminando el script.")
+        return
+    
     subprocess.run(["sudo", "systemctl", "stop", "klipperlcd.service"])
     time.sleep(1)
-    
-    port = find_port()
-    if not port:
-        subprocess.run(["sudo", "systemctl", "start", "klipperlcd.service"])
-        return
 
     connect_baud = connect_to_screen(port)
 
