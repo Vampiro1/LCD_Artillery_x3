@@ -99,6 +99,14 @@ Quite simple, just remember to cross RX and TX on the LCD and the USB/UART HW.
 ### Get the code
     git clone https://github.com/Vampiro1/LCD_Artillery_x3 KlipperLCD
     cd KlipperLCD
+    LCD_DEST="/home/pi/KlipperLCD"
+    FIRMWARE_DEST="/home/pi/KlipperLCD/firmware"
+    mkdir -p "$FIRMWARE_DEST"
+    wget -O "$LCD_DEST/LCD.tft" "https://github.com/Vampiro1/LCD_Artillery_x3/releases/download/firmware/LCD.tft"
+    wget -O "$FIRMWARE_DEST/141025.zip" "https://github.com/Vampiro1/LCD_Artillery_x3/releases/download/firmware/141025.zip"
+    unzip -o "$FIRMWARE_DEST/141025.zip" -d "$FIRMWARE_DEST"
+    rm "$FIRMWARE_DEST/141025.zip"
+
 
 ### Run KlipperLCD service at boot
 If the path of `main.py` is something else than `/home/pi/KlipperLCD/main.py` or your user is not `pi`. Open and edit `KlipperLCD.service` to fit your needs.
