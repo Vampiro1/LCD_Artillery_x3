@@ -141,7 +141,7 @@ class KlipperLCD ():
 
             if os.path.exists(FLAG_FILE):
                 self.lcd.send_wait_variable()
-                subprocess.run(["sudo", "rm", FLAG_FILE], check=True)
+                subprocess.run(["rm", FLAG_FILE], check=True)
 
 
             time.sleep(2)
@@ -363,4 +363,5 @@ if __name__ == "__main__":
 
     x = KlipperLCD()
     x.start()
+
 
