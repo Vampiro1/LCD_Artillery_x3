@@ -93,8 +93,13 @@ Quite simple, just remember to cross RX and TX on the LCD and the USB/UART HW.
     The KLIPPER_ARGS should include `-a /home/pi/printer_data/comms/klippy.sock`. If not add it to the klipper.env file!
 
 ### Install service
+    cd /home/pi
+    rm -rf KlipperLCD
+    git clone https://github.com/Vampiro1/LCD_Artillery_x3 KlipperLCD
+    cd KlipperLCD
     chmod +x install.sh
     ./install.sh
+
 
 
 ## Console
@@ -120,5 +125,6 @@ Follow this guide to enable thumbnails in your slicer: https://klipperscreen.rea
 </p>
 
 ### Uninstall service
+    cd /home/pi/KlipperLCD
     chmod +x uninstall.sh
     ./uninstall.sh
