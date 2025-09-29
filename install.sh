@@ -28,7 +28,7 @@ sudo cp KlipperLCD.service /etc/systemd/system/KlipperLCD.service
 sudo chmod 644 /etc/systemd/system/KlipperLCD.service
 sudo systemctl daemon-reload
 sudo systemctl enable KlipperLCD.service
-sudo systemctl start KlipperLCD.service
+
 
 echo "=== Configurando Moonraker ==="
 MOONRAKER_ASVC=/home/pi/printer_data/moonraker.asvc
@@ -42,11 +42,11 @@ grep -q "\[update_manager KlipperLCD\]" $CONF || \
 type: git_repo
 path: ~/KlipperLCD
 origin: https://github.com/Vampiro1/LCD_Artillery_x3.git
-branch: master
 is_system_service: True
 EOL
 )
 
 sudo systemctl restart moonraker
+sudo systemctl start KlipperLCD.service
 
 echo "=== Instalación completada ==="
