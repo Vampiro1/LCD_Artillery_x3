@@ -53,7 +53,7 @@ Quite simple, just remember to cross RX and TX on the LCD and the USB/UART HW.
 </p>
 
 ## Update the LCD screen firmware
-1. Copy the LCD screen firmware `Firm_Update/141025.tft` to the root of a FAT32 formatted micro-SD card.
+1. Copy the LCD screen firmware from here https://github.com/Vampiro1/LCD_Artillery_x3/releases/download/firmware/LCD.tft to the root of a FAT32 formatted micro-SD card.
 2. Make sure the LCD screen is powered off.
 3. Insert the micro-SD card into the LCD screens SD card holder. Back-cover needs to be removed.
 4. Power on the LCD screen and wait for screen to say `Update Successed!`
