@@ -269,12 +269,8 @@ class LCD:
         #sleep(0.3)
         #return self.printer.__dict__.get(var, 0)
 
-    def read_value(self, var, addr=None, timeout=2.0):
-        if addr is not None:
-            cmd = f"repo {var},{addr}"
-        else:
-            cmd = f"rept {var}"
-    
+    def read_value(self, var, addr=None, timeout=1.0):
+        cmd = f"rept {var},{addr}"    
         self.write(cmd)
      
         start = time.time()
@@ -288,14 +284,9 @@ class LCD:
             else:
                 time.sleep(0.01)
                 
-        response = response.rstrip(b'\xFF\xFF\xFF').decode(errors='ignore').strip()
-        try:
-            if '.' in response:
-                return float(response)
-            else:
-                return int(response)
-        except ValueError:
-            return response
+        val = int(response.decode(errors='ignore').strip().rstrip('\xFF'))
+        print(f"[DEBUG] read_value('{var}', addr={addr}) -> {val}")
+        return val
 
 
     def write(self, data, eol=True, lf=False):
