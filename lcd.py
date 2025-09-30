@@ -261,34 +261,19 @@ class LCD:
         self.write("information.size.txt=\"%s\"" % size)
         self.write("information.sversion.txt=\"%s\"" % fw)
 
-    #def read_value(self, var, addr=None):
-        #if addr is not None:
-            #self.write(f"repo {var},{addr}")
-        #else:
-            #self.write(f"prints {var},0")
-        #sleep(0.3)
-        #return self.printer.__dict__.get(var, 0)
+    def read_value(self, var):
+        self.write(f"prints {var},0")
+        sleep(0.3)
 
-    def read_value(self, var, addr=None, timeout=1.0):
-        cmd = f"rept {var},{addr}"    
-        self.write(cmd)
-     
-        start = time.time()
-        response = b""
-        while time.time() - start < timeout:
-            chunk = self.ser.read(self.ser.in_waiting or 1)
-            if chunk:
-                response += chunk
-                if response.endswith(b'\xFF\xFF\xFF'):
-                    break
-            else:
-                time.sleep(0.01)
-                
-        val = int(response.decode(errors='ignore').strip().rstrip('\xFF'))
-        print(f"[DEBUG] read_value('{var}', addr={addr}) -> {val}")
-        return val
+        response = self.ser.read(self.ser.in_waiting or 1)
+        print(f"[DEBUG RAW] var='{var}' response={response} len={len(response)}")
 
-
+        if response and len(response) >= 4:
+            val = int.from_bytes(response[:4], 'little')
+            print(f"[DEBUG PARSED] var='{var}' val={val}")
+            return val
+        return None
+        
     def write(self, data, eol=True, lf=False):
         dat = bytearray()
         if type(data) == str:
