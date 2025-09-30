@@ -236,7 +236,7 @@ class LCD:
         # Thumbnail
         self.is_thumbnail_written = False
         self.askprint = False
-        # Make sure the serial port closes when you quit the program.
+        self.last_read_value = None
         atexit.register(self._atexit)
 
     def _atexit(self):
@@ -262,18 +262,14 @@ class LCD:
         self.write("information.sversion.txt=\"%s\"" % fw)
 
     def read_value(self, var):
-        self.write(f"prints {var},0")
-        sleep(0.3)
+        self.last_read_value = None
+        self.write(f"get {var}")
+        time.sleep(0.2)
 
-        response = self.ser.read(self.ser.in_waiting or 1)
-        print(f"[DEBUG RAW] var='{var}' response={response} len={len(response)}")
+        val = self.last_read_value
+        print(f"[DEBUG PARSED] var='{var}' val={val}")
+        return val
 
-        if response and len(response) >= 4:
-            val = int.from_bytes(response[:4], 'little')
-            print(f"[DEBUG PARSED] var='{var}' val={val}")
-            return val
-        return None
-        
     def write(self, data, eol=True, lf=False):
         dat = bytearray()
         if type(data) == str:
@@ -546,6 +542,13 @@ class LCD:
 
     def run(self):
         while self.running:
+            if self.ser.in_waiting > 0 and self.ser.read(1) == b'\x71':
+                response_bytes = self.ser.read(4)
+                self.ser.read(3)
+                if len(response_bytes) == 4:
+                    self.last_read_value = int.from_bytes(response_bytes, 'little', signed=True)
+                continue 
+            
             incomingByte = self.ser.read(1)
             if not incomingByte:
                 continue
