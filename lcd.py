@@ -261,13 +261,37 @@ class LCD:
         self.write("information.size.txt=\"%s\"" % size)
         self.write("information.sversion.txt=\"%s\"" % fw)
 
-    def read_value(self, var, addr=None):
-        if addr is not None:
-            self.write(f"repo {var},{addr}")
+    #def read_value(self, var, addr=None):
+        #if addr is not None:
+            #self.write(f"repo {var},{addr}")
+        #else:
+            #self.write(f"prints {var},0")
+        #sleep(0.3)
+        #return self.printer.__dict__.get(var, 0)
+
+    def read_value(self, var, addr=None, is_text=False, timeout=1.0):
+        if is_text:
+            cmd = f"rept {var}"
+        elif addr is not None:
+            cmd = f"repo {var},{addr}"
         else:
-            self.write(f"prints {var},0")
-        sleep(0.3)
-        return self.printer.__dict__.get(var, 0)
+            cmd = f"prints {var},0"
+    
+        self.write(cmd)
+     
+        start = time.time()
+        response = b""
+        while time.time() - start < timeout:
+            chunk = self.ser.read(self.ser.in_waiting or 1)
+            if chunk:
+                response += chunk
+                if response.endswith(b'\xFF\xFF\xFF'):
+                    break
+            else:
+                time.sleep(0.01)
+    
+        return response.decode(errors='ignore').strip()
+
 
     def write(self, data, eol=True, lf=False):
         dat = bytearray()
