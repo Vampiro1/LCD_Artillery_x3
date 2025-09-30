@@ -364,7 +364,3 @@ if __name__ == "__main__":
 
     x = KlipperLCD()
     x.start()
-
-
-
-
