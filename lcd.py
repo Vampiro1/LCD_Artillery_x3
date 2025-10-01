@@ -545,23 +545,8 @@ class LCD:
         while self.running:
             if self.ser.in_waiting > 0:
                 peek = self.ser.read(1)
-                if peek == b'\x71':  # respuesta numérica
-                    response_bytes = self.ser.read(4)
-                    self.ser.read(3)
-                    if len(response_bytes) == 4:
-                        self.last_read_value = int.from_bytes(response_bytes, 'little', signed=True)
-                        print(f"[DEBUG GET] Valor leído: {self.last_read_value}")
-                    continue
-                elif peek == b'\x70':  # respuesta string
-                    s = bytearray()
-                    while True:
-                        b = self.ser.read(1)
-                        if b == b'\xFF':
-                            self.ser.read(2)
-                            break
-                        s.extend(b)
-                    self.last_read_value = s.decode(errors="ignore")
-                    print(f"[DEBUG GET] Texto leído: {self.last_read_value}")
+                if peek in (b'\x71', b'\x70'):
+                    self._handle_get_response(peek[0])
                     continue
                 else:
                     incomingByte = peek
@@ -634,6 +619,24 @@ class LCD:
             self.addr_func_map[addr](data)
         else:
             print("_handle_readvar: addr %x not recognised" % addr)
+
+    def _handle_get_response(self, first_byte):
+        if first_byte == 0x71:
+            response_bytes = self.ser.read(4)
+            self.ser.read(3)
+            if len(response_bytes) == 4:
+                self.last_read_value = int.from_bytes(response_bytes, 'little', signed=True)
+                print(f"[DEBUG GET] numérico leído: {self.last_read_value}")
+        elif first_byte == 0x70:
+            s = bytearray()
+            while True:
+                b = self.ser.read(1)
+                if b == b'\xFF':
+                    self.ser.read(2)
+                    break
+                s.extend(b)
+            self.last_read_value = s.decode(errors="ignore")
+            print(f"[DEBUG GET] string leído: {self.last_read_value}")
 
     def _Console(self, data):
         if data[0] == 0x01: # Back
