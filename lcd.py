@@ -570,7 +570,6 @@ class LCD:
 
             if not incomingByte:
                 continue
-
             #
             if self.rx_state == RX_STATE_IDLE:
                 if incomingByte[0] == FHONE:
