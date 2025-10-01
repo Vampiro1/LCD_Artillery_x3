@@ -262,11 +262,10 @@ class LCD:
         self.write("information.size.txt=\"%s\"" % size)
         self.write("information.sversion.txt=\"%s\"" % fw)
 
-    def read_value(self, var):
+     def read_value(self, var):
         self.last_read_value = None
         self.write(f"get {var}")
         time.sleep(0.2)
-
         val = self.last_read_value
         print(f"[DEBUG PARSED] var='{var}' val={val}")
         return val
