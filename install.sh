@@ -17,9 +17,9 @@ echo "=== Preparando firmware ==="
 FIRMWARE_DEST="/home/pi/KlipperLCD/firmware"
 mkdir -p "$FIRMWARE_DEST"
 
-wget -O "$FIRMWARE_DEST/141025.zip" "https://github.com/Vampiro1/LCD_Artillery_x3/releases/download/firmware/141025.zip"
-unzip -o "$FIRMWARE_DEST/141025.zip" -d "$FIRMWARE_DEST"
-rm "$FIRMWARE_DEST/141025.zip"
+wget -O "$FIRMWARE_DEST/firmware.zip" "https://github.com/Vampiro1/LCD_Artillery_x3/releases/download/firmware/firmware.zip"
+unzip -o "$FIRMWARE_DEST/firmware.zip" -d "$FIRMWARE_DEST"
+rm "$FIRMWARE_DEST/firmware.zip"
 
 ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft /home/pi/KlipperLCD/LCD.tft
 
