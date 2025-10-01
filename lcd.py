@@ -545,14 +545,14 @@ class LCD:
         while self.running:
             if self.ser.in_waiting > 0:
                 peek = self.ser.read(1)
-                if peek == b'\x71':
+                if peek == b'\x71':  # respuesta numérica
                     response_bytes = self.ser.read(4)
                     self.ser.read(3)
                     if len(response_bytes) == 4:
                         self.last_read_value = int.from_bytes(response_bytes, 'little', signed=True)
                         print(f"[DEBUG GET] Valor leído: {self.last_read_value}")
                     continue
-                elif peek == b'\x70':
+                elif peek == b'\x70':  # respuesta string
                     s = bytearray()
                     while True:
                         b = self.ser.read(1)
@@ -570,7 +570,7 @@ class LCD:
 
             if not incomingByte:
                 continue
-            #
+
             if self.rx_state == RX_STATE_IDLE:
                 if incomingByte[0] == FHONE:
                     self.rx_buf.extend(incomingByte)
@@ -585,11 +585,9 @@ class LCD:
                     self.rx_buf.clear()
                     self.error_from_lcd = True
                     print("Unexpected data received: 0x%02x" % incomingByte[0])
-            #
             elif self.rx_state == RX_STATE_READ_LEN:
                 self.rx_buf.extend(incomingByte)
                 self.rx_state = RX_STATE_READ_DAT
-            #
             elif self.rx_state == RX_STATE_READ_DAT:
                 self.rx_buf.extend(incomingByte)
                 self.rx_data_cnt += 1
@@ -601,6 +599,7 @@ class LCD:
                     self.rx_buf.clear()
                     self.rx_data_cnt = 0
                     self.rx_state = RX_STATE_IDLE
+
 
     def _handle_command(self, cmd, dat):
         if cmd == CMD_WRITEVAR: #0x82
