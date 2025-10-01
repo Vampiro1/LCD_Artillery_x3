@@ -7,12 +7,6 @@ sudo apt-get install -y python3-pip git unzip wget
 pip3 install --upgrade pip
 pip3 install pyserial
 
-echo "=== Clonando repositorio ==="
-cd /home/pi
-rm -rf KlipperLCD
-git clone https://github.com/Vampiro1/LCD_Artillery_x3 KlipperLCD
-cd KlipperLCD
-
 echo "=== Preparando firmware ==="
 FIRMWARE_DEST="/home/pi/KlipperLCD/firmware"
 mkdir -p "$FIRMWARE_DEST"
