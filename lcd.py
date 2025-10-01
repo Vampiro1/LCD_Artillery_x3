@@ -10,6 +10,7 @@ import subprocess
 import atexit
 import serial
 import subprocess, json
+import time
 class LCD_var ():
     def __init__(self, ser, varname):
         self.ser = ser
@@ -542,16 +543,34 @@ class LCD:
 
     def run(self):
         while self.running:
-            if self.ser.in_waiting > 0 and self.ser.read(1) == b'\x71':
-                response_bytes = self.ser.read(4)
-                self.ser.read(3)
-                if len(response_bytes) == 4:
-                    self.last_read_value = int.from_bytes(response_bytes, 'little', signed=True)
-                continue 
-            
-            incomingByte = self.ser.read(1)
+            if self.ser.in_waiting > 0:
+                peek = self.ser.read(1)
+                if peek == b'\x71':
+                    response_bytes = self.ser.read(4)
+                    self.ser.read(3)
+                    if len(response_bytes) == 4:
+                        self.last_read_value = int.from_bytes(response_bytes, 'little', signed=True)
+                        print(f"[DEBUG GET] Valor leído: {self.last_read_value}")
+                    continue
+                elif peek == b'\x70':
+                    s = bytearray()
+                    while True:
+                        b = self.ser.read(1)
+                        if b == b'\xFF':
+                            self.ser.read(2)
+                            break
+                        s.extend(b)
+                    self.last_read_value = s.decode(errors="ignore")
+                    print(f"[DEBUG GET] Texto leído: {self.last_read_value}")
+                    continue
+                else:
+                    incomingByte = peek
+            else:
+                incomingByte = self.ser.read(1)
+
             if not incomingByte:
                 continue
+
             #
             if self.rx_state == RX_STATE_IDLE:
                 if incomingByte[0] == FHONE:
