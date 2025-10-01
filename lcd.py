@@ -238,6 +238,7 @@ class LCD:
         # Thumbnail
         self.is_thumbnail_written = False
         self.askprint = False
+        self.waiting_for_value = False
         self.last_read_value = None
         atexit.register(self._atexit)
 
@@ -265,11 +266,20 @@ class LCD:
 
     def read_value(self, var):
         self.last_read_value = None
+        self.waiting_for_value = True
         self.write(f"get {var}")
-        time.sleep(0.2)
-        val = self.last_read_value
-        print(f"[DEBUG PARSED] var='{var}' val={val}")
-        return val
+
+        timeout = time.time() + 2  # Timeout de 2 segundos
+        while self.waiting_for_value and time.time() < timeout:
+            time.sleep(0.05)
+
+        if not self.waiting_for_value:
+            print(f"[DEBUG PARSED] var='{var}' val={self.last_read_value}")
+            return self.last_read_value
+        else:
+            print(f"[DEBUG TIMEOUT] No se recibió respuesta para '{var}'")
+            self.waiting_for_value = False  # Resetear la bandera
+            return None
 
     def write(self, data, eol=True, lf=False):
         dat = bytearray()
@@ -543,19 +553,10 @@ class LCD:
 
     def run(self):
         while self.running:
-            if self.ser.in_waiting > 0:
-                peek = self.ser.read(1)
-                if peek in (b'\x71', b'\x70'):
-                    self._handle_get_response(peek[0])
-                    continue
-                else:
-                    incomingByte = peek
-            else:
-                incomingByte = self.ser.read(1)
-
+            incomingByte = self.ser.read(1)
             if not incomingByte:
                 continue
-
+            
             if self.rx_state == RX_STATE_IDLE:
                 if incomingByte[0] == FHONE:
                     self.rx_buf.extend(incomingByte)
@@ -566,13 +567,19 @@ class LCD:
                     else:
                         self.rx_buf.clear()
                         print("Unexpected header received: 0x%02x ()" % incomingByte[0])
+                        
+                elif incomingByte[0] == 0x71:
+                    self._handle_get_response()
+                    
                 else:
                     self.rx_buf.clear()
                     self.error_from_lcd = True
                     print("Unexpected data received: 0x%02x" % incomingByte[0])
+            
             elif self.rx_state == RX_STATE_READ_LEN:
                 self.rx_buf.extend(incomingByte)
                 self.rx_state = RX_STATE_READ_DAT
+            
             elif self.rx_state == RX_STATE_READ_DAT:
                 self.rx_buf.extend(incomingByte)
                 self.rx_data_cnt += 1
@@ -584,7 +591,6 @@ class LCD:
                     self.rx_buf.clear()
                     self.rx_data_cnt = 0
                     self.rx_state = RX_STATE_IDLE
-
 
     def _handle_command(self, cmd, dat):
         if cmd == CMD_WRITEVAR: #0x82
@@ -620,23 +626,20 @@ class LCD:
         else:
             print("_handle_readvar: addr %x not recognised" % addr)
 
-    def _handle_get_response(self, first_byte):
-        if first_byte == 0x71:
-            response_bytes = self.ser.read(4)
-            self.ser.read(3)
-            if len(response_bytes) == 4:
-                self.last_read_value = int.from_bytes(response_bytes, 'little', signed=True)
-                print(f"[DEBUG GET] numérico leído: {self.last_read_value}")
-        elif first_byte == 0x70:
-            s = bytearray()
-            while True:
-                b = self.ser.read(1)
-                if b == b'\xFF':
-                    self.ser.read(2)
-                    break
-                s.extend(b)
-            self.last_read_value = s.decode(errors="ignore")
-            print(f"[DEBUG GET] string leído: {self.last_read_value}")
+
+    def _handle_get_response(self):
+        response_bytes = self.ser.read(4)
+        terminator = self.ser.read(3)
+
+        if len(response_bytes) == 4:
+            val = int.from_bytes(response_bytes, 'little', signed=True)
+            self.last_read_value = val
+        else:
+            print("[ERROR] Respuesta 'get' incompleta desde el LCD.")
+            self.last_read_value = None
+
+        if self.waiting_for_value:
+            self.waiting_for_value = False
 
     def _Console(self, data):
         if data[0] == 0x01: # Back
