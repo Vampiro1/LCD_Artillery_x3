@@ -3,6 +3,7 @@ import time
 import os
 import subprocess
 import glob
+import sys
 
 FILE_PATH = '/home/pi/KlipperLCD/LCD.tft'
 DOWNLOAD_BAUD = 921600
@@ -12,12 +13,9 @@ def find_port():
     possible_ports = []
     possible_ports.extend(glob.glob('/dev/ttyUSB*'))
     possible_ports.extend(glob.glob('/dev/ttyACM*'))
-    if os.path.exists('/dev/ttyAMA0'):
-        possible_ports.append('/dev/ttyAMA0')
-    if os.path.exists('/dev/ttyS0'):
-        possible_ports.append('/dev/ttyS0')
-    if os.path.exists('/dev/serial0'):
-        possible_ports.append('/dev/serial0')
+    for candidate in ['/dev/ttyAMA0', '/dev/ttyS0', '/dev/serial0']:
+        if os.path.exists(candidate):
+            possible_ports.append(candidate)
 
     for port in possible_ports:
         try:
@@ -70,44 +68,27 @@ def send_download_command(port, file_path, connect_baud, download_baud):
 def mark_as_used():
     if not os.path.exists(FILE_PATH):
         return
-
     current_tft_path = os.path.realpath(FILE_PATH)
-
     base_name = os.path.basename(current_tft_path).replace(".tft", "")
     new_file_name = f"{base_name}{USADO_SUFFIX}.tft"
     new_tft_path = os.path.join(os.path.dirname(current_tft_path), new_file_name)
-
     os.rename(current_tft_path, new_tft_path)
-
     os.remove(FILE_PATH)
     os.symlink(new_tft_path, FILE_PATH)
 
-
 def main():
     port = find_port()
-    
     if not port:
-        print("❌ No se pudo encontrar y/o conectar a un puerto serial disponible para la pantalla. Terminando el script.")
+        print("❌ No se pudo encontrar puerto serie para la pantalla.")
         return
 
-    subprocess.Popen(
-        ["systemctl", "stop", "KlipperLCD.service"],
-        start_new_session=True
-    )
-    #subprocess.run(["systemctl", "stop", "KlipperLCD.service"])
-    time.sleep(1)
+    try:
+        # 1. Detener KlipperLCD
+        subprocess.run(["systemctl", "stop", "KlipperLCD.service"], check=True)
+        time.sleep(1)
 
-    connect_baud = connect_to_screen(port)
-
-    update_success = False
-    if connect_baud:
-        update_success = send_download_command(port, FILE_PATH, connect_baud, DOWNLOAD_BAUD)
-
-    if update_success:
-        mark_as_used()
-
-    time.sleep(4)
-    subprocess.run(["systemctl", "start", "KlipperLCD.service"])
-
-if __name__ == "__main__":
-    main()
+        # 2. Intentar conectar y actualizar
+        connect_baud = connect_to_screen(port)
+        update_success = False
+        if connect_baud:
+            update_success = send_download_command(port, FILE_PATH, co
