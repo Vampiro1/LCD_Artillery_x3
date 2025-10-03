@@ -90,7 +90,7 @@ def main():
         print("❌ No se pudo encontrar y/o conectar a un puerto serial disponible para la pantalla. Terminando el script.")
         return
     
-    subprocess.run(["systemctl", "stop", "klipperlcd.service"])
+    subprocess.run(["systemctl", "stop", "KlipperLCD.service"])
     time.sleep(1)
 
     connect_baud = connect_to_screen(port)
@@ -103,7 +103,7 @@ def main():
         mark_as_used()
 
     time.sleep(4)
-    subprocess.run(["systemctl", "start", "klipperlcd.service"])
+    subprocess.run(["systemctl", "start", "KlipperLCD.service"])
 
 if __name__ == "__main__":
     main()
