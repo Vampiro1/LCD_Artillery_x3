@@ -20,10 +20,6 @@ ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft /home/pi/KlipperLCD/LCD.tft
 echo "=== Instalando servicio systemd ==="
 sudo cp KlipperLCD.service /etc/systemd/system/KlipperLCD.service
 sudo chmod 644 /etc/systemd/system/KlipperLCD.service
-
-sudo cp KlipperLCD_firmw.service /etc/systemd/system/KlipperLCD_firmw.service
-sudo chmod 644 /etc/systemd/system/KlipperLCD_firmw.service
-
 sudo systemctl daemon-reload
 sudo systemctl enable KlipperLCD.service
 
