@@ -1,3 +1,4 @@
 /firmware/
 /firmware/*
 LCD.tft
+__pycache__/
