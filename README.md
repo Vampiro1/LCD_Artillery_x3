@@ -97,7 +97,6 @@ Quite simple, just remember to cross RX and TX on the LCD and the USB/UART HW.
     rm -rf KlipperLCD
     git clone https://github.com/Vampiro1/LCD_Artillery_x3 KlipperLCD
     cd KlipperLCD
-    chmod +x install.sh
     ./install.sh
 
 
