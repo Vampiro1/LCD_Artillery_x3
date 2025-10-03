@@ -23,14 +23,18 @@ sudo chmod 644 /etc/systemd/system/KlipperLCD.service
 sudo systemctl daemon-reload
 sudo systemctl enable KlipperLCD.service
 
-
 echo "=== Configurando Moonraker ==="
 MOONRAKER_ASVC=/home/pi/printer_data/moonraker.asvc
+CONF=/home/pi/printer_data/config/moonraker.conf
+
 grep -qxF "KlipperLCD" $MOONRAKER_ASVC || echo "KlipperLCD" | sudo tee -a $MOONRAKER_ASVC > /dev/null
 
-CONF=/home/pi/printer_data/config/moonraker.conf
-grep -q "\[update_manager KlipperLCD\]" $CONF || \
-(sudo tee -a $CONF > /dev/null <<-EOL
+if [ -f "$CONF" ]; then
+    echo "Eliminando rastros antiguos de KlipperLCD en moonraker.conf..."
+    sudo sed -i '/KlipperLCD/d' "$CONF"
+fi
+
+sudo tee -a $CONF > /dev/null <<-EOL
 
 [update_manager KlipperLCD]
 type: git_repo
@@ -40,7 +44,6 @@ primary_branch: master
 channel: dev
 is_system_service: True
 EOL
-)
 
 sudo systemctl restart moonraker
 sudo systemctl start KlipperLCD.service
