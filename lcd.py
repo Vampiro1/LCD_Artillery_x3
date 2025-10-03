@@ -1338,7 +1338,7 @@ class LCD:
         nx = len(mesh[0]) if ny > 0 else 0
 
         if nx not in layouts or ny != nx:
-            self.write("autohome.va0.val++")
+            self.write("autohome.va0.val=2")
             return
 
         page_map = {
