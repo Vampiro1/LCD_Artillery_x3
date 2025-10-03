@@ -1,0 +1,12 @@
+[Unit]
+Description=KlipperLCD Firmware Updater
+After=multi-user.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/bin/env python3 /home/pi/KlipperLCD/firmw.py
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
