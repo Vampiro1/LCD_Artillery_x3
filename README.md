@@ -127,4 +127,4 @@ Follow this guide to enable thumbnails in your slicer: https://klipperscreen.rea
 ### Uninstall service
     cd /home/pi/KlipperLCD
     chmod +x uninstall.sh
-    sudo ./uninstall.sh
+    sudo ./uninstall.sh && cd
