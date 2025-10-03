@@ -91,4 +91,19 @@ def main():
         connect_baud = connect_to_screen(port)
         update_success = False
         if connect_baud:
-            update_success = send_download_command(port, FILE_PATH, co
+            update_success = send_download_command(port, FILE_PATH, connect_baud, DOWNLOAD_BAUD)
+
+        # 3. Marcar como usado si fue bien
+        if update_success:
+            print("✅ Firmware actualizado correctamente.")
+            mark_as_used()
+        else:
+            print("⚠️ No se pudo actualizar firmware.")
+
+    finally:
+        # 4. Siempre volver a levantar KlipperLCD
+        time.sleep(2)
+        subprocess.run(["systemctl", "start", "KlipperLCD.service"])
+
+if __name__ == "__main__":
+    main()
