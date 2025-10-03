@@ -15,7 +15,7 @@ wget -O "$FIRMWARE_DEST/firmware.zip" "https://github.com/Vampiro1/LCD_Artillery
 unzip -o "$FIRMWARE_DEST/firmware.zip" -d "$FIRMWARE_DEST"
 rm "$FIRMWARE_DEST/firmware.zip"
 
-ln -sf /home/pi/KlipperLCD/firmware/141025usado.tft /home/pi/KlipperLCD/LCD.tft
+ln -sf /home/pi/KlipperLCD/firmware/031025usado.tft /home/pi/KlipperLCD/LCD.tft
 
 echo "=== Instalando servicio systemd ==="
 sudo cp KlipperLCD.service /etc/systemd/system/KlipperLCD.service
