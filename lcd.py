@@ -277,7 +277,7 @@ class LCD:
             print(f"[DEBUG PARSED] var='{var}' val={self.last_read_value}")
             return self.last_read_value
         else:
-            #print(f"[DEBUG TIMEOUT] No se recibió respuesta para '{var}'")
+            print(f"[DEBUG TIMEOUT] No se recibió respuesta para '{var}'")
             self.waiting_for_value = False  # Resetear la bandera
             return None
 
@@ -556,7 +556,7 @@ class LCD:
             incomingByte = self.ser.read(1)
             if not incomingByte:
                 continue
-
+            
             if self.rx_state == RX_STATE_IDLE:
                 if incomingByte[0] == FHONE:
                     self.rx_buf.extend(incomingByte)
@@ -566,26 +566,20 @@ class LCD:
                         self.rx_state = RX_STATE_READ_LEN
                     else:
                         self.rx_buf.clear()
+                        print("Unexpected header received: 0x%02x ()" % incomingByte[0])
+                        
                 elif incomingByte[0] == 0x71:
-                    self.rx_buf.clear()
-                    self.rx_data_cnt = 0
-                    data = bytearray()
-                    while True:
-                        b = self.ser.read(1)
-                        if not b:
-                            break
-                        data.extend(b)
-                        if len(data) >= 3:
-                            break
-                    self._handle_command(0x71, data)
+                    self._handle_get_response()
+                    
                 else:
                     self.rx_buf.clear()
                     self.error_from_lcd = True
-
+                    print("Unexpected data received: 0x%02x" % incomingByte[0])
+            
             elif self.rx_state == RX_STATE_READ_LEN:
                 self.rx_buf.extend(incomingByte)
                 self.rx_state = RX_STATE_READ_DAT
-
+            
             elif self.rx_state == RX_STATE_READ_DAT:
                 self.rx_buf.extend(incomingByte)
                 self.rx_data_cnt += 1
@@ -599,43 +593,27 @@ class LCD:
                     self.rx_state = RX_STATE_IDLE
 
     def _handle_command(self, cmd, dat):
-        if cmd == CMD_WRITEVAR:
+        if cmd == CMD_WRITEVAR: #0x82
+            print("Write variable command received")
+            print(binascii.hexlify(dat))
+        elif cmd == CMD_READVAR: #0x83
             addr = dat[0]
             addr = (addr << 8) | dat[1]
             bytelen = dat[2]
             data = [32]
-            for i in range(0, bytelen, 2):
+            for i in range (0, bytelen, 2):
                 idx = int(i / 2)
                 data[idx] = dat[3 + i]
                 data[idx] = (data[idx] << 8) | dat[4 + i]
             self._handle_readvar(addr, data)
-        elif cmd == CMD_READVAR:
+        elif cmd == CMD_CONSOLE: #0x42
             addr = dat[0]
             addr = (addr << 8) | dat[1]
-            bytelen = dat[2]
-            data = [32]
-            for i in range(0, bytelen, 2):
-                idx = int(i / 2)
-                data[idx] = dat[3 + i]
-                data[idx] = (data[idx] << 8) | dat[4 + i]
+            data = dat[3:] # Remove addr and len
             self._handle_readvar(addr, data)
-        elif cmd == 0x71:
-            addr = dat[0]
-            addr = (addr << 8) | dat[1]
-            bytelen = dat[2]
-            data = [32]
-            for i in range(0, bytelen, 2):
-                idx = int(i / 2)
-                data[idx] = dat[3 + i]
-                data[idx] = (data[idx] << 8) | dat[4 + i]
-            self._handle_readvar(addr, data)
-        elif cmd == CMD_CONSOLE:
-            addr = dat[0]
-            addr = (addr << 8) | dat[1]
-            data = dat[3:]
-            self._Console(data)
         else:
-            print("Command not recognised: %d" % cmd)
+            print("Command not reqognised: %d" % cmd)
+            print(binascii.hexlify(dat))
 
     def _handle_readvar(self, addr, data):
         if addr in self.addr_func_map:
@@ -646,21 +624,33 @@ class LCD:
                 print("%s: len: %d data[0]: %x" % (self.addr_func_map[addr].__name__, len(data), data[0]))
             self.addr_func_map[addr](data)
         else:
-            print("_handle_readvar: addr %x not recognised" % addr)             
+            print("_handle_readvar: addr %x not recognised" % addr)
+
+
+    def _handle_get_response(self):
+        response_bytes = self.ser.read(4)
+        terminator = self.ser.read(3)
+
+        if len(response_bytes) == 4:
+            val = int.from_bytes(response_bytes, 'little', signed=True)
+            self.last_read_value = val
+        else:
+            print("[ERROR] Respuesta 'get' incompleta desde el LCD.")
+            self.last_read_value = None
+
+        if self.waiting_for_value:
+            self.waiting_for_value = False
 
     def _Console(self, data):
-        if data[0] == 0x01:
+        if data[0] == 0x01: # Back
             state = self.printer.state
             if state == "printing" or state == "paused" or state == "pausing":
                 self.write("page printpause")
             else:
                 self.write("page main")
         else:
-            try:
-                text = data.decode()
-            except:
-                text = repr(data)
-            self.callback(self.evt.CONSOLE, text)
+            print(data.decode('latin-1', 'replace'))
+            self.callback(self.evt.CONSOLE, data.decode('latin-1', 'replace'))
 
     def _MainPage(self, data):
         if data[0] == 1: # Print
@@ -1133,18 +1123,14 @@ class LCD:
             print("_FilamentLoad: Not recognised %d" % data[0])
 
     def _ComandosKlipper(self, data):
-        if data[0] == 0x01:  
+        if data[0] == 0x01:
             self.callback(self.evt.CONSOLE, "SAVE_CONFIG")
-            self.callback(self.evt.RESTART_LCD, None)
         elif data[0] == 0x02:
             self.callback(self.evt.CONSOLE, "RESTART")
-            self.callback(self.evt.RESTART_LCD, None)
         elif data[0] == 0x03:
             self.callback(self.evt.CONSOLE, "FIRMWARE_RESTART")
-            self.callback(self.evt.RESTART_LCD, None)
         elif data[0] == 0x04:
             self.callback(self.evt.EMERGENCY_STOP, None)
-            self.callback(self.evt.RESTART_LCD, None)
         elif data[0] == 0x05:
             self.callback(self.evt.REBOOT_PI, None)
         elif data[0] == 0x06:
