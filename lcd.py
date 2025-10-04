@@ -631,7 +631,6 @@ class LCD:
         else:
             print("Command not recognised: %d" % cmd)
 
-
     def _handle_readvar(self, addr, data):
         if addr in self.addr_func_map:
             # Call function corresponding with addr
