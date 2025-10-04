@@ -552,51 +552,51 @@ class LCD:
         self.write("adjustzoffset.z_offset.val=%d" % (int)(self.printer.z_pos * 1000))
 
     def run(self):
-    while self.running:
-        incomingByte = self.ser.read(1)
-        if not incomingByte:
-            continue
+        while self.running:
+            incomingByte = self.ser.read(1)
+            if not incomingByte:
+                continue
 
-        if self.rx_state == RX_STATE_IDLE:
-            if incomingByte[0] == FHONE:
-                self.rx_buf.extend(incomingByte)
-            elif incomingByte[0] == FHTWO:
-                if len(self.rx_buf) > 0 and self.rx_buf[0] == FHONE:
+            if self.rx_state == RX_STATE_IDLE:
+                if incomingByte[0] == FHONE:
                     self.rx_buf.extend(incomingByte)
-                    self.rx_state = RX_STATE_READ_LEN
+                elif incomingByte[0] == FHTWO:
+                    if len(self.rx_buf) > 0 and self.rx_buf[0] == FHONE:
+                        self.rx_buf.extend(incomingByte)
+                        self.rx_state = RX_STATE_READ_LEN
+                    else:
+                        self.rx_buf.clear()
+                elif incomingByte[0] == 0x71:
+                    self.rx_buf.clear()
+                    self.rx_data_cnt = 0
+                    data = bytearray()
+                    while True:
+                        b = self.ser.read(1)
+                        if not b:
+                            break
+                        data.extend(b)
+                        if len(data) >= 3:
+                            break
+                    self._handle_command(0x71, data)
                 else:
                     self.rx_buf.clear()
-            elif incomingByte[0] == 0x71:
-                self.rx_buf.clear()
-                self.rx_data_cnt = 0
-                data = bytearray()
-                while True:
-                    b = self.ser.read(1)
-                    if not b:
-                        break
-                    data.extend(b)
-                    if len(data) >= 3:
-                        break
-                self._handle_command(0x71, data)
-            else:
-                self.rx_buf.clear()
-                self.error_from_lcd = True
+                    self.error_from_lcd = True
 
-        elif self.rx_state == RX_STATE_READ_LEN:
-            self.rx_buf.extend(incomingByte)
-            self.rx_state = RX_STATE_READ_DAT
+            elif self.rx_state == RX_STATE_READ_LEN:
+                self.rx_buf.extend(incomingByte)
+                self.rx_state = RX_STATE_READ_DAT
 
-        elif self.rx_state == RX_STATE_READ_DAT:
-            self.rx_buf.extend(incomingByte)
-            self.rx_data_cnt += 1
-            msg_len = self.rx_buf[2]
-            if self.rx_data_cnt >= msg_len:
-                cmd = self.rx_buf[3]
-                data = self.rx_buf[-(msg_len-1):]
-                self._handle_command(cmd, data)
-                self.rx_buf.clear()
-                self.rx_data_cnt = 0
-                self.rx_state = RX_STATE_IDLE
+            elif self.rx_state == RX_STATE_READ_DAT:
+                self.rx_buf.extend(incomingByte)
+                self.rx_data_cnt += 1
+                msg_len = self.rx_buf[2]
+                if self.rx_data_cnt >= msg_len:
+                    cmd = self.rx_buf[3]
+                    data = self.rx_buf[-(msg_len-1):]
+                    self._handle_command(cmd, data)
+                    self.rx_buf.clear()
+                    self.rx_data_cnt = 0
+                    self.rx_state = RX_STATE_IDLE
 
     def _handle_command(self, cmd, dat):
         if cmd == CMD_WRITEVAR:
