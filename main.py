@@ -206,22 +206,23 @@ class KlipperLCD ():
                 file_name = self.printer.file_name
             else:
                 print("ERROR: gcode file not known")
-                self.thumbnail_inprogress = False
+
+            file = self.printer.file_path + "/" + file_name
+
+            # Reading file
+            print(absolute_file_path)
+            f = open(absolute_file_path, "r")
+            if not f:
+                f.close()
+                print("File could not be opened: %s" % file)
+                return
+            buf = f.readlines()
+            if not f:
+                f.close()
+                print("File could not be read")
                 return
 
-            # Usar ruta absoluta de thumbnails
-            thumb_path = "/home/pi/printer_data/gcodes/.thumbs"
-            file = os.path.join(thumb_path, file_name)
-            print(file)
-
-            try:
-                with open(file, "r") as f:
-                    buf = f.readlines()
-            except Exception as e:
-                print(f"File could not be opened or read: {file} | Error: {e}")
-                self.thumbnail_inprogress = False
-                return
-
+            f.close()
             thumbnail_found = False
             b64 = ""
 
@@ -233,22 +234,20 @@ class KlipperLCD ():
                     break
                 elif thumbnail_found:
                     b64 += line.strip(' \t\n\r;')
-
+        
             if len(b64):
-                try:
-                    img = base64.b64decode(b64)
-                    self.lcd.write_thumbnail(img)
-                except Exception as e:
-                    print(f"Error decoding thumbnail: {e}")
-                    self.lcd.clear_thumbnail()
+                # Decode Base64
+                img = base64.b64decode(b64)        
+                
+                #Write thumbnail to LCD
+                self.lcd.write_thumbnail(img)
             else:
                 self.lcd.clear_thumbnail()
                 print("Aborting thumbnail, no image found")
         else:
             print("File path or name to gcode-files missing")
-
+        
         self.thumbnail_inprogress = False
-
 
     def lcd_callback(self, evt, data=None):
         if evt == self.lcd.evt.HOME:
@@ -364,6 +363,7 @@ if __name__ == "__main__":
 
     x = KlipperLCD()
     x.start()
+
 
 
 
