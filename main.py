@@ -208,6 +208,7 @@ class KlipperLCD ():
                 print("ERROR: gcode file not known")
 
             file = self.printer.file_path + "/" + file_name
+            absolute_file_path = file.replace('~', '/home/pi') 
 
             # Reading file
             print(absolute_file_path)
@@ -363,6 +364,7 @@ if __name__ == "__main__":
 
     x = KlipperLCD()
     x.start()
+
 
 
 
