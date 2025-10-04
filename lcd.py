@@ -644,13 +644,31 @@ class LCD:
     def _Console(self, data):
         if data[0] == 0x01: # Back
             state = self.printer.state
-            if state == "printing" or state == "paused" or state == "pausing":
+            if state in ("printing", "paused", "pausing"):
                 self.write("page printpause")
             else:
                 self.write("page main")
         else:
-            print(data.decode())
-            self.callback(self.evt.CONSOLE, data.decode())
+            try:
+                text = data.decode('utf-8')
+                
+                print(text)
+                self.callback(self.evt.CONSOLE, text)
+            except UnicodeDecodeError:
+                print("[DATOS BINARIOS IGNORADOS]", data)
+                
+                pass
+
+    #def _Console(self, data):
+        #if data[0] == 0x01: # Back
+            #state = self.printer.state
+            #if state == "printing" or state == "paused" or state == "pausing":
+                #self.write("page printpause")
+            #else:
+                #self.write("page main")
+        #else:
+            #print(data.decode())
+            #self.callback(self.evt.CONSOLE, data.decode())
 
     def _MainPage(self, data):
         if data[0] == 1: # Print
