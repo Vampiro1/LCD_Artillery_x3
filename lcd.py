@@ -56,6 +56,7 @@ RX_STATE_IDLE = 0
 RX_STATE_READ_LEN = 1
 RX_STATE_READ_CMD = 2
 RX_STATE_READ_DAT = 3
+RX_STATE_WAIT_FHTWO = 4
 
 PLA   = 0
 ABS   = 1
@@ -558,23 +559,26 @@ class LCD:
                 continue
             
             if self.rx_state == RX_STATE_IDLE:
-                if incomingByte[0] == FHONE:
+                if incomingByte[0] == FHONE: # Si recibimos 0x5A
+                    self.rx_buf.clear()
                     self.rx_buf.extend(incomingByte)
-                elif incomingByte[0] == FHTWO:
-                    if len(self.rx_buf) > 0 and self.rx_buf[0] == FHONE:
-                        self.rx_buf.extend(incomingByte)
-                        self.rx_state = RX_STATE_READ_LEN
-                    else:
-                        self.rx_buf.clear()
-                        print("Unexpected header received: 0x%02x ()" % incomingByte[0])
-                        
+                    self.rx_state = RX_STATE_WAIT_FHTWO # Cambiamos al estado de espera
                 elif incomingByte[0] == 0x71:
                     self._handle_get_response()
-                    
                 else:
+                    # Solo si estamos en IDLE y no es un inicio de comando conocido, es un error real
+                    if incomingByte[0] != 0xff and incomingByte[0] != 0x20:
+                         print("Unexpected data in IDLE state: 0x%02x" % incomingByte[0])
+
+            elif self.rx_state == RX_STATE_WAIT_FHTWO:
+                if incomingByte[0] == FHTWO: # Si recibimos el esperado 0xA5
+                    self.rx_buf.extend(incomingByte)
+                    self.rx_state = RX_STATE_READ_LEN # Continuamos con la lógica original
+                else:
+                    # Si no recibimos 0xA5, el paquete estaba corrupto. Reseteamos.
+                    print("Expected 0xA5 but got 0x%02x. Resetting state." % incomingByte[0])
                     self.rx_buf.clear()
-                    self.error_from_lcd = True
-                    print("Unexpected data received: 0x%02x" % incomingByte[0])
+                    self.rx_state = RX_STATE_IDLE
             
             elif self.rx_state == RX_STATE_READ_LEN:
                 self.rx_buf.extend(incomingByte)
