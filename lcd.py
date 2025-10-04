@@ -593,27 +593,44 @@ class LCD:
                     self.rx_state = RX_STATE_IDLE
 
     def _handle_command(self, cmd, dat):
-        if cmd == CMD_WRITEVAR: #0x82
-            print("Write variable command received")
-            print(binascii.hexlify(dat))
-        elif cmd == CMD_READVAR: #0x83
+        if cmd == CMD_WRITEVAR:
             addr = dat[0]
             addr = (addr << 8) | dat[1]
             bytelen = dat[2]
             data = [32]
-            for i in range (0, bytelen, 2):
+            for i in range(0, bytelen, 2):
                 idx = int(i / 2)
                 data[idx] = dat[3 + i]
                 data[idx] = (data[idx] << 8) | dat[4 + i]
             self._handle_readvar(addr, data)
-        elif cmd == CMD_CONSOLE: #0x42
+        elif cmd == CMD_READVAR:
             addr = dat[0]
             addr = (addr << 8) | dat[1]
-            data = dat[3:] # Remove addr and len
+            bytelen = dat[2]
+            data = [32]
+            for i in range(0, bytelen, 2):
+                idx = int(i / 2)
+                data[idx] = dat[3 + i]
+                data[idx] = (data[idx] << 8) | dat[4 + i]
             self._handle_readvar(addr, data)
+        elif cmd == 0x71:
+            addr = dat[0]
+            addr = (addr << 8) | dat[1]
+            bytelen = dat[2]
+            data = [32]
+            for i in range(0, bytelen, 2):
+                idx = int(i / 2)
+                data[idx] = dat[3 + i]
+                data[idx] = (data[idx] << 8) | dat[4 + i]
+            self._handle_readvar(addr, data)
+        elif cmd == CMD_CONSOLE:
+            addr = dat[0]
+            addr = (addr << 8) | dat[1]
+            data = dat[3:]
+            self._Console(data)
         else:
-            print("Command not reqognised: %d" % cmd)
-            print(binascii.hexlify(dat))
+            print("Command not recognised: %d" % cmd)
+
 
     def _handle_readvar(self, addr, data):
         if addr in self.addr_func_map:
@@ -624,49 +641,21 @@ class LCD:
                 print("%s: len: %d data[0]: %x" % (self.addr_func_map[addr].__name__, len(data), data[0]))
             self.addr_func_map[addr](data)
         else:
-            print("_handle_readvar: addr %x not recognised" % addr)
-
-
-    def _handle_get_response(self):
-        response_bytes = self.ser.read(4)
-        terminator = self.ser.read(3)
-
-        if len(response_bytes) == 4:
-            val = int.from_bytes(response_bytes, 'little', signed=True)
-            self.last_read_value = val
-        else:
-            print("[ERROR] Respuesta 'get' incompleta desde el LCD.")
-            self.last_read_value = None
-
-        if self.waiting_for_value:
-            self.waiting_for_value = False
+            print("_handle_readvar: addr %x not recognised" % addr)             
 
     def _Console(self, data):
-        if data[0] == 0x01: # Back
+        if data[0] == 0x01:
             state = self.printer.state
-            if state in ("printing", "paused", "pausing"):
+            if state == "printing" or state == "paused" or state == "pausing":
                 self.write("page printpause")
             else:
                 self.write("page main")
         else:
             try:
-                text = data.decode('utf-8')                
-                print(text)
-                self.callback(self.evt.CONSOLE, text)
-            except UnicodeDecodeError:
-                print("[BIN DATA]", data)
-                
-
-    #def _Console(self, data):
-        #if data[0] == 0x01: # Back
-            #state = self.printer.state
-            #if state == "printing" or state == "paused" or state == "pausing":
-                #self.write("page printpause")
-            #else:
-                #self.write("page main")
-        #else:
-            #print(data.decode())
-            #self.callback(self.evt.CONSOLE, data.decode())
+                text = data.decode()
+            except:
+                text = repr(data)
+            self.callback(self.evt.CONSOLE, text)
 
     def _MainPage(self, data):
         if data[0] == 1: # Print
