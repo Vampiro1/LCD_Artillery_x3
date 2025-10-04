@@ -567,9 +567,6 @@ class LCD:
                     else:
                         self.rx_buf.clear()
                         print("Unexpected header received: 0x%02x ()" % incomingByte[0])
-                        
-                elif incomingByte[0] == 0x71:
-                    self._handle_get_response()
                     
                 else:
                     self.rx_buf.clear()
