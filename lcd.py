@@ -1123,18 +1123,18 @@ class LCD:
             print("_FilamentLoad: Not recognised %d" % data[0])
 
     def _ComandosKlipper(self, data):
-        if data[0] == 0x01:
-            self.callback(self.evt.RESTART_LCD, None)
+        if data[0] == 0x01:  
             self.callback(self.evt.CONSOLE, "SAVE_CONFIG")
+            self.callback(self.evt.RESTART_LCD, None)
         elif data[0] == 0x02:
-            self.callback(self.evt.RESTART_LCD, None)
             self.callback(self.evt.CONSOLE, "RESTART")
+            self.callback(self.evt.RESTART_LCD, None)
         elif data[0] == 0x03:
-            self.callback(self.evt.RESTART_LCD, None)
             self.callback(self.evt.CONSOLE, "FIRMWARE_RESTART")
-        elif data[0] == 0x04:
             self.callback(self.evt.RESTART_LCD, None)
+        elif data[0] == 0x04:
             self.callback(self.evt.EMERGENCY_STOP, None)
+            self.callback(self.evt.RESTART_LCD, None)
         elif data[0] == 0x05:
             self.callback(self.evt.REBOOT_PI, None)
         elif data[0] == 0x06:
