@@ -209,15 +209,16 @@ class KlipperLCD ():
                 self.thumbnail_inprogress = False
                 return
 
-            file = os.path.join(os.path.expanduser(self.printer.file_path), file_name)
+            # Usar ruta absoluta de thumbnails
+            thumb_path = "/home/pi/printer_data/gcodes/.thumbs"
+            file = os.path.join(thumb_path, file_name)
             print(file)
 
             try:
                 with open(file, "r") as f:
                     buf = f.readlines()
             except Exception as e:
-                print(f"File could not be opened or read: {e}")
-                self.lcd.clear_thumbnail()
+                print(f"File could not be opened or read: {file} | Error: {e}")
                 self.thumbnail_inprogress = False
                 return
 
@@ -233,9 +234,13 @@ class KlipperLCD ():
                 elif thumbnail_found:
                     b64 += line.strip(' \t\n\r;')
 
-            if b64:
-                img = base64.b64decode(b64)
-                self.lcd.write_thumbnail(img)
+            if len(b64):
+                try:
+                    img = base64.b64decode(b64)
+                    self.lcd.write_thumbnail(img)
+                except Exception as e:
+                    print(f"Error decoding thumbnail: {e}")
+                    self.lcd.clear_thumbnail()
             else:
                 self.lcd.clear_thumbnail()
                 print("Aborting thumbnail, no image found")
@@ -243,6 +248,7 @@ class KlipperLCD ():
             print("File path or name to gcode-files missing")
 
         self.thumbnail_inprogress = False
+
 
     def lcd_callback(self, evt, data=None):
         if evt == self.lcd.evt.HOME:
@@ -358,6 +364,7 @@ if __name__ == "__main__":
 
     x = KlipperLCD()
     x.start()
+
 
 
 
