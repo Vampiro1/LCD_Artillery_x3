@@ -650,14 +650,12 @@ class LCD:
                 self.write("page main")
         else:
             try:
-                text = data.decode('utf-8')
-                
+                text = data.decode('utf-8')                
                 print(text)
                 self.callback(self.evt.CONSOLE, text)
             except UnicodeDecodeError:
-                print("[DATOS BINARIOS IGNORADOS]", data)
+                print("[BIN DATA]", data)
                 
-                pass
 
     #def _Console(self, data):
         #if data[0] == 0x01: # Back
