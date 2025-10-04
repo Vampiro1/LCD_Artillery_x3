@@ -274,10 +274,10 @@ class LCD:
             time.sleep(0.05)
 
         if not self.waiting_for_value:
-            print(f"[DEBUG PARSED] var='{var}' val={self.last_read_value}")
+            #print(f"[DEBUG PARSED] var='{var}' val={self.last_read_value}")
             return self.last_read_value
         else:
-            print(f"[DEBUG TIMEOUT] No se recibió respuesta para '{var}'")
+            #print(f"[DEBUG TIMEOUT] No se recibió respuesta para '{var}'")
             self.waiting_for_value = False  # Resetear la bandera
             return None
 
