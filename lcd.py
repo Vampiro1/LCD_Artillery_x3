@@ -556,7 +556,10 @@ class LCD:
             incomingByte = self.ser.read(1)
             if not incomingByte:
                 continue
-            
+
+            # Debug: mostrar cada byte recibido
+            print(f"[DEBUG RX] Byte recibido: 0x{incomingByte[0]:02X}")
+
             if self.rx_state == RX_STATE_IDLE:
                 if incomingByte[0] == FHONE:
                     self.rx_buf.extend(incomingByte)
@@ -566,20 +569,18 @@ class LCD:
                         self.rx_state = RX_STATE_READ_LEN
                     else:
                         self.rx_buf.clear()
-                        print("Unexpected header received: 0x%02x ()" % incomingByte[0])
-                        
+                        print(f"Unexpected header received: 0x{incomingByte[0]:02x}")
                 elif incomingByte[0] == 0x71:
                     self._handle_get_response()
-                    
                 else:
                     self.rx_buf.clear()
                     self.error_from_lcd = True
-                    print("Unexpected data received: 0x%02x" % incomingByte[0])
-            
+                    print(f"Unexpected data received: 0x{incomingByte[0]:02x}")
+
             elif self.rx_state == RX_STATE_READ_LEN:
                 self.rx_buf.extend(incomingByte)
                 self.rx_state = RX_STATE_READ_DAT
-            
+
             elif self.rx_state == RX_STATE_READ_DAT:
                 self.rx_buf.extend(incomingByte)
                 self.rx_data_cnt += 1
@@ -587,6 +588,9 @@ class LCD:
                 if self.rx_data_cnt >= msg_len:
                     cmd = self.rx_buf[3]
                     data = self.rx_buf[-(msg_len-1):]
+
+                    # Debug: mostrar todo el mensaje antes de manejarlo
+                    print(f"[DEBUG RX] CMD=0x{cmd:02X}, Data ({len(data)} bytes): {data}")
                     self._handle_command(cmd, data)
                     self.rx_buf.clear()
                     self.rx_data_cnt = 0
@@ -642,22 +646,24 @@ class LCD:
             self.waiting_for_value = False
 
     def _Console(self, data):
-        # Intentar decodificar para logging, si falla mantener los bytes
+        # Intentar decodificar para logging
         try:
             decoded = data.decode('utf-8')
         except UnicodeDecodeError:
             decoded = None
             print(f"[WARN _Console] Data no decodificable: {data}")
 
-        # Log para depuración
+        # Debug completo de bytes
         print(f"[_Console] Raw data ({len(data)} bytes): {data}")
         if decoded:
             print(f"[_Console] Decoded: {decoded}")
+        else:
+            # Mostrar byte por byte si no se pudo decodificar
+            for i, b in enumerate(data):
+                print(f"[BYTE {i}] 0x{b:02X}")
 
-        # Callback igual que antes, pero seguro
-        self.callback(self.evt.CONSOLE, decoded if decoded else data)
-
-
+        # Callback seguro
+        self.callback(self.evt.CONSOLE, decoded if decoded else data) 
 
     def _MainPage(self, data):
         if data[0] == 1: # Print
