@@ -543,7 +543,7 @@ class LCD:
         self.z_offset_unit = 0.01
         self.write("adjustzoffset.z_offset.val=%d" % (int)(self.printer.z_pos * 1000))
 
-       def run(self):
+    def run(self):
         while self.running:
             incomingByte = self.ser.read(1)
             if not incomingByte:
