@@ -552,49 +552,49 @@ class LCD:
         self.z_offset_unit = 0.01
         self.write("adjustzoffset.z_offset.val=%d" % (int)(self.printer.z_pos * 1000))
 
-    def run(self):
-        while self.running:
-            incomingByte = self.ser.read(1)
-            if not incomingByte:
-                continue
-            
-            if self.rx_state == RX_STATE_IDLE:
-                if incomingByte[0] == FHONE: # Si recibimos 0x5A
-                    self.rx_buf.clear()
-                    self.rx_buf.extend(incomingByte)
-                    self.rx_state = RX_STATE_WAIT_FHTWO # Cambiamos al estado de espera
-                elif incomingByte[0] == 0x71:
-                    self._handle_get_response()
-                else:
-                    # Solo si estamos en IDLE y no es un inicio de comando conocido, es un error real
-                    if incomingByte[0] != 0xff and incomingByte[0] != 0x20:
-                         print("Unexpected data in IDLE state: 0x%02x" % incomingByte[0])
+   def run(self):
+    while self.running:
+        incomingByte = self.ser.read(1)
+        if not incomingByte:
+            continue
 
-            elif self.rx_state == RX_STATE_WAIT_FHTWO:
-                if incomingByte[0] == FHTWO: # Si recibimos el esperado 0xA5
-                    self.rx_buf.extend(incomingByte)
-                    self.rx_state = RX_STATE_READ_LEN # Continuamos con la lógica original
+        b = incomingByte[0]
+
+        if b == 0x71:
+            val_bytes = self.ser.read(4)
+            end_bytes = self.ser.read(3)
+            if end_bytes == b'\xFF\xFF\xFF':
+                value = int.from_bytes(val_bytes, byteorder='little')
+                self.callback("GET_VALUE", value)
+            continue
+
+        if self.rx_state == RX_STATE_IDLE:
+            if b == FHONE:
+                self.rx_buf = bytearray([b])
+            elif b == FHTWO:
+                if len(self.rx_buf) > 0 and self.rx_buf[0] == FHONE:
+                    self.rx_buf.append(b)
+                    self.rx_state = RX_STATE_READ_LEN
                 else:
-                    # Si no recibimos 0xA5, el paquete estaba corrupto. Reseteamos.
-                    print("Expected 0xA5 but got 0x%02x. Resetting state." % incomingByte[0])
                     self.rx_buf.clear()
-                    self.rx_state = RX_STATE_IDLE
-            
-            elif self.rx_state == RX_STATE_READ_LEN:
-                self.rx_buf.extend(incomingByte)
-                self.rx_state = RX_STATE_READ_DAT
-            
-            elif self.rx_state == RX_STATE_READ_DAT:
-                self.rx_buf.extend(incomingByte)
-                self.rx_data_cnt += 1
-                msg_len = self.rx_buf[2]
-                if self.rx_data_cnt >= msg_len:
-                    cmd = self.rx_buf[3]
-                    data = self.rx_buf[-(msg_len-1):]
-                    self._handle_command(cmd, data)
-                    self.rx_buf.clear()
-                    self.rx_data_cnt = 0
-                    self.rx_state = RX_STATE_IDLE
+            else:
+                self.rx_buf.clear()
+                self.error_from_lcd = True
+        elif self.rx_state == RX_STATE_READ_LEN:
+            self.rx_buf.append(b)
+            self.rx_state = RX_STATE_READ_DAT
+            self.rx_data_cnt = 0
+        elif self.rx_state == RX_STATE_READ_DAT:
+            self.rx_buf.append(b)
+            self.rx_data_cnt += 1
+            msg_len = self.rx_buf[2]
+            if self.rx_data_cnt >= msg_len:
+                cmd = self.rx_buf[3]
+                data = self.rx_buf[-(msg_len-1):]
+                self._handle_command(cmd, data)
+                self.rx_buf.clear()
+                self.rx_data_cnt = 0
+                self.rx_state = RX_STATE_IDLE
 
     def _handle_command(self, cmd, dat):
         if cmd == CMD_WRITEVAR: #0x82
@@ -629,21 +629,6 @@ class LCD:
             self.addr_func_map[addr](data)
         else:
             print("_handle_readvar: addr %x not recognised" % addr)
-
-
-    def _handle_get_response(self):
-        response_bytes = self.ser.read(4)
-        terminator = self.ser.read(3)
-
-        if len(response_bytes) == 4:
-            val = int.from_bytes(response_bytes, 'little', signed=True)
-            self.last_read_value = val
-        else:
-            print("[ERROR] Respuesta 'get' incompleta desde el LCD.")
-            self.last_read_value = None
-
-        if self.waiting_for_value:
-            self.waiting_for_value = False
 
     def _Console(self, data):
         if data[0] == 0x01: # Back
