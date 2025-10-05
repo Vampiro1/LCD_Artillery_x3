@@ -56,7 +56,6 @@ RX_STATE_IDLE = 0
 RX_STATE_READ_LEN = 1
 RX_STATE_READ_CMD = 2
 RX_STATE_READ_DAT = 3
-RX_STATE_WAIT_FHTWO = 4
 
 PLA   = 0
 ABS   = 1
@@ -265,13 +264,22 @@ class LCD:
         self.write("information.size.txt=\"%s\"" % size)
         self.write("information.sversion.txt=\"%s\"" % fw)
 
-    def read_value(self, var, addr=None):
-        if addr is not None:
-            self.write(f"repo {var},{addr}")
+    def read_value(self, var):
+        self.last_read_value = None
+        self.waiting_for_value = True
+        self.write(f"get {var}")
+
+        timeout = time.time() + 2  # Timeout de 2 segundos
+        while self.waiting_for_value and time.time() < timeout:
+            time.sleep(0.05)
+
+        if not self.waiting_for_value:
+            print(f"[DEBUG PARSED] var='{var}' val={self.last_read_value}")
+            return self.last_read_value
         else:
-            self.write(f"prints {var},0")
-        sleep(0.3)
-        return self.printer.__dict__.get(var, 0)
+            print(f"[DEBUG TIMEOUT] No se recibió respuesta para '{var}'")
+            self.waiting_for_value = False  # Resetear la bandera
+            return None
 
     def write(self, data, eol=True, lf=False):
         dat = bytearray()
@@ -548,7 +556,7 @@ class LCD:
             incomingByte = self.ser.read(1)
             if not incomingByte:
                 continue
-            #
+            
             if self.rx_state == RX_STATE_IDLE:
                 if incomingByte[0] == FHONE:
                     self.rx_buf.extend(incomingByte)
@@ -559,15 +567,19 @@ class LCD:
                     else:
                         self.rx_buf.clear()
                         print("Unexpected header received: 0x%02x ()" % incomingByte[0])
+                        
+                elif incomingByte[0] == 0x71:
+                    self._handle_get_response()
+                    
                 else:
                     self.rx_buf.clear()
                     self.error_from_lcd = True
                     print("Unexpected data received: 0x%02x" % incomingByte[0])
-            #
+            
             elif self.rx_state == RX_STATE_READ_LEN:
                 self.rx_buf.extend(incomingByte)
                 self.rx_state = RX_STATE_READ_DAT
-            #
+            
             elif self.rx_state == RX_STATE_READ_DAT:
                 self.rx_buf.extend(incomingByte)
                 self.rx_data_cnt += 1
@@ -613,6 +625,21 @@ class LCD:
             self.addr_func_map[addr](data)
         else:
             print("_handle_readvar: addr %x not recognised" % addr)
+
+
+    def _handle_get_response(self):
+        response_bytes = self.ser.read(4)
+        terminator = self.ser.read(3)
+
+        if len(response_bytes) == 4:
+            val = int.from_bytes(response_bytes, 'little', signed=True)
+            self.last_read_value = val
+        else:
+            print("[ERROR] Respuesta 'get' incompleta desde el LCD.")
+            self.last_read_value = None
+
+        if self.waiting_for_value:
+            self.waiting_for_value = False
 
     def _Console(self, data):
         if data[0] == 0x01: # Back
