@@ -556,10 +556,7 @@ class LCD:
             incomingByte = self.ser.read(1)
             if not incomingByte:
                 continue
-
-            # Debug: mostrar cada byte recibido
-            print(f"[DEBUG RX] Byte recibido: 0x{incomingByte[0]:02X}")
-
+            
             if self.rx_state == RX_STATE_IDLE:
                 if incomingByte[0] == FHONE:
                     self.rx_buf.extend(incomingByte)
@@ -569,18 +566,20 @@ class LCD:
                         self.rx_state = RX_STATE_READ_LEN
                     else:
                         self.rx_buf.clear()
-                        print(f"Unexpected header received: 0x{incomingByte[0]:02x}")
+                        print("Unexpected header received: 0x%02x ()" % incomingByte[0])
+                        
                 elif incomingByte[0] == 0x71:
                     self._handle_get_response()
+                    
                 else:
                     self.rx_buf.clear()
                     self.error_from_lcd = True
-                    print(f"Unexpected data received: 0x{incomingByte[0]:02x}")
-
+                    print("Unexpected data received: 0x%02x" % incomingByte[0])
+            
             elif self.rx_state == RX_STATE_READ_LEN:
                 self.rx_buf.extend(incomingByte)
                 self.rx_state = RX_STATE_READ_DAT
-
+            
             elif self.rx_state == RX_STATE_READ_DAT:
                 self.rx_buf.extend(incomingByte)
                 self.rx_data_cnt += 1
@@ -588,13 +587,33 @@ class LCD:
                 if self.rx_data_cnt >= msg_len:
                     cmd = self.rx_buf[3]
                     data = self.rx_buf[-(msg_len-1):]
-
-                    # Debug: mostrar todo el mensaje antes de manejarlo
-                    print(f"[DEBUG RX] CMD=0x{cmd:02X}, Data ({len(data)} bytes): {data}")
                     self._handle_command(cmd, data)
                     self.rx_buf.clear()
                     self.rx_data_cnt = 0
                     self.rx_state = RX_STATE_IDLE
+
+    def _handle_command(self, cmd, dat):
+        if cmd == CMD_WRITEVAR: #0x82
+            print("Write variable command received")
+            print(binascii.hexlify(dat))
+        elif cmd == CMD_READVAR: #0x83
+            addr = dat[0]
+            addr = (addr << 8) | dat[1]
+            bytelen = dat[2]
+            data = [32]
+            for i in range (0, bytelen, 2):
+                idx = int(i / 2)
+                data[idx] = dat[3 + i]
+                data[idx] = (data[idx] << 8) | dat[4 + i]
+            self._handle_readvar(addr, data)
+        elif cmd == CMD_CONSOLE: #0x42
+            addr = dat[0]
+            addr = (addr << 8) | dat[1]
+            data = dat[3:] # Remove addr and len
+            self._handle_readvar(addr, data)
+        else:
+            print("Command not reqognised: %d" % cmd)
+            print(binascii.hexlify(dat))
 
     def _handle_command(self, cmd, dat):
         if cmd == CMD_WRITEVAR: #0x82
@@ -646,24 +665,15 @@ class LCD:
             self.waiting_for_value = False
 
     def _Console(self, data):
-        # Intentar decodificar para logging
-        try:
-            decoded = data.decode('utf-8')
-        except UnicodeDecodeError:
-            decoded = None
-            print(f"[WARN _Console] Data no decodificable: {data}")
-
-        # Debug completo de bytes
-        print(f"[_Console] Raw data ({len(data)} bytes): {data}")
-        if decoded:
-            print(f"[_Console] Decoded: {decoded}")
+        if data[0] == 0x01: # Back
+            state = self.printer.state
+            if state == "printing" or state == "paused" or state == "pausing":
+                self.write("page printpause")
+            else:
+                self.write("page main")
         else:
-            # Mostrar byte por byte si no se pudo decodificar
-            for i, b in enumerate(data):
-                print(f"[BYTE {i}] 0x{b:02X}")
-
-        # Callback seguro
-        self.callback(self.evt.CONSOLE, decoded if decoded else data) 
+            print(data.decode())
+            self.callback(self.evt.CONSOLE, data.decode())
 
     def _MainPage(self, data):
         if data[0] == 1: # Print
