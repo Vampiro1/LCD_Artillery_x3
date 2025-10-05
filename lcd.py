@@ -638,8 +638,8 @@ class LCD:
             else:
                 self.write("page main")
         else:
-            print(data.decode('latin-1', 'replace'))
-            self.callback(self.evt.CONSOLE, data.decode('latin-1', 'replace'))
+            print(data.decode())
+            self.callback(self.evt.CONSOLE, data.decode())
 
     def _MainPage(self, data):
         if data[0] == 1: # Print
