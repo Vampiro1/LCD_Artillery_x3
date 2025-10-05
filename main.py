@@ -71,11 +71,13 @@ class KlipperLCD ():
         else:
             new_val = 0
 
-        current_val = self.lcd.read_value("boot.va2.val", mem_addr)
+        current_val = self.lcd.read_value("boot.va2.val")
+        print(f"current_val ({type(current_val)}):", current_val, "new_val:", new_val)
+
         if current_val != new_val:
             self.lcd.write(f"boot.va2.val={new_val}")
             self.lcd.write(f"wepo boot.va2.val,{mem_addr}")
-            self.lcd.write("page main")
+        self.lcd.write("page main")
 
 
     def start(self):
@@ -194,6 +196,8 @@ class KlipperLCD ():
 
         if data_type == "lcd_command":
             self.lcd.write(data)
+
+
 
     def show_thumbnail(self):
         if self.printer.file_path and (self.printer.file_name or self.lcd.files[self.lcd.selected_file]):
@@ -354,21 +358,14 @@ class KlipperLCD ():
         elif evt == self.lcd.evt.EMERGENCY_STOP:
             self.printer.emergency_stop()
 
+
         else:
-            print(f"lcd_callback event not recognised {evt}")
+            print("lcd_callback event not recognised %d" % evt)
 
 if __name__ == "__main__":
 
     x = KlipperLCD()
     x.start()
-
-
-
-
-
-
-
-
 
 
 
