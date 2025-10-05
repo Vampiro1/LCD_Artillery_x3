@@ -552,49 +552,49 @@ class LCD:
         self.z_offset_unit = 0.01
         self.write("adjustzoffset.z_offset.val=%d" % (int)(self.printer.z_pos * 1000))
 
-   def run(self):
-    while self.running:
-        incomingByte = self.ser.read(1)
-        if not incomingByte:
-            continue
+    def run(self):
+        while self.running:
+            incomingByte = self.ser.read(1)
+            if not incomingByte:
+                continue
 
-        b = incomingByte[0]
+            b = incomingByte[0]
 
-        if b == 0x71:
-            val_bytes = self.ser.read(4)
-            end_bytes = self.ser.read(3)
-            if end_bytes == b'\xFF\xFF\xFF':
-                value = int.from_bytes(val_bytes, byteorder='little')
-                self.callback("GET_VALUE", value)
-            continue
+            if b == 0x71:
+                val_bytes = self.ser.read(4)
+                end_bytes = self.ser.read(3)
+                if end_bytes == b'\xFF\xFF\xFF':
+                    value = int.from_bytes(val_bytes, byteorder='little')
+                    self.callback("GET_VALUE", value)
+                continue
 
-        if self.rx_state == RX_STATE_IDLE:
-            if b == FHONE:
-                self.rx_buf = bytearray([b])
-            elif b == FHTWO:
-                if len(self.rx_buf) > 0 and self.rx_buf[0] == FHONE:
-                    self.rx_buf.append(b)
-                    self.rx_state = RX_STATE_READ_LEN
+            if self.rx_state == RX_STATE_IDLE:
+                if b == FHONE:
+                    self.rx_buf = bytearray([b])
+                elif b == FHTWO:
+                    if len(self.rx_buf) > 0 and self.rx_buf[0] == FHONE:
+                        self.rx_buf.append(b)
+                        self.rx_state = RX_STATE_READ_LEN
+                    else:
+                        self.rx_buf.clear()
                 else:
                     self.rx_buf.clear()
-            else:
-                self.rx_buf.clear()
-                self.error_from_lcd = True
-        elif self.rx_state == RX_STATE_READ_LEN:
-            self.rx_buf.append(b)
-            self.rx_state = RX_STATE_READ_DAT
-            self.rx_data_cnt = 0
-        elif self.rx_state == RX_STATE_READ_DAT:
-            self.rx_buf.append(b)
-            self.rx_data_cnt += 1
-            msg_len = self.rx_buf[2]
-            if self.rx_data_cnt >= msg_len:
-                cmd = self.rx_buf[3]
-                data = self.rx_buf[-(msg_len-1):]
-                self._handle_command(cmd, data)
-                self.rx_buf.clear()
+                    self.error_from_lcd = True
+            elif self.rx_state == RX_STATE_READ_LEN:
+                self.rx_buf.append(b)
+                self.rx_state = RX_STATE_READ_DAT
                 self.rx_data_cnt = 0
-                self.rx_state = RX_STATE_IDLE
+            elif self.rx_state == RX_STATE_READ_DAT:
+                self.rx_buf.append(b)
+                self.rx_data_cnt += 1
+                msg_len = self.rx_buf[2]
+                if self.rx_data_cnt >= msg_len:
+                    cmd = self.rx_buf[3]
+                    data = self.rx_buf[-(msg_len-1):]
+                    self._handle_command(cmd, data)
+                    self.rx_buf.clear()
+                    self.rx_data_cnt = 0
+                    self.rx_state = RX_STATE_IDLE
 
     def _handle_command(self, cmd, dat):
         if cmd == CMD_WRITEVAR: #0x82
