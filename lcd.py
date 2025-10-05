@@ -147,7 +147,7 @@ class LCDEvents():
 
 
 class LCD:
-    def __init__(self, port=None, baud=115200, callback=None,):
+    def __init__(self, port=None, baud=921600, callback=None,):
         self.addr_func_map = {
             0x1002: self._MainPage,
             0x1004: self._Adjustment,
