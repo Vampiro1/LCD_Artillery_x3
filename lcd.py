@@ -265,22 +265,13 @@ class LCD:
         self.write("information.size.txt=\"%s\"" % size)
         self.write("information.sversion.txt=\"%s\"" % fw)
 
-    def read_value(self, var):
-        self.last_read_value = None
-        self.waiting_for_value = True
-        self.write(f"get {var}")
-
-        timeout = time.time() + 2  # Timeout de 2 segundos
-        while self.waiting_for_value and time.time() < timeout:
-            time.sleep(0.05)
-
-        if not self.waiting_for_value:
-            print(f"[DEBUG PARSED] var='{var}' val={self.last_read_value}")
-            return self.last_read_value
+    def read_value(self, var, addr=None):
+        if addr is not None:
+            self.write(f"repo {var},{addr}")
         else:
-            print(f"[DEBUG TIMEOUT] No se recibió respuesta para '{var}'")
-            self.waiting_for_value = False  # Resetear la bandera
-            return None
+            self.write(f"prints {var},0")
+        sleep(0.3)
+        return self.printer.__dict__.get(var, 0)
 
     def write(self, data, eol=True, lf=False):
         dat = bytearray()
@@ -552,78 +543,87 @@ class LCD:
         self.z_offset_unit = 0.01
         self.write("adjustzoffset.z_offset.val=%d" % (int)(self.printer.z_pos * 1000))
 
-    def run(self):
+       def run(self):
         while self.running:
-            try:
-                data = self.serial.read(self.serial.in_waiting or 1)
-                if not data:
-                    time.sleep(0.01)
-                    continue
-                self.rx_buf += data
-
-                while len(self.rx_buf) > 0:
-                    if self.rx_buf[0] == 0x71 and len(self.rx_buf) >= 8:
-                        pkt = self.rx_buf[:8]
-                        self.rx_buf = self.rx_buf[8:]
-                        self._handle_get_response(pkt)
-                        continue
-
-                    if len(self.rx_buf) >= 4 and self.rx_buf[0] == 0x5A and self.rx_buf[1] == 0xA5:
-                        pkt_len = self.rx_buf[2]
-                        if len(self.rx_buf) < pkt_len + 3:
-                            break
-                        cmd = self.rx_buf[3]
-                        payload = self.rx_buf[4:3 + pkt_len]
-                        self.rx_buf = self.rx_buf[3 + pkt_len:]
-                        self._handle_command(cmd, payload)
-                        continue
-
-                    self.rx_buf = self.rx_buf[1:]
-
-            except Exception:
-                pass
-
+            incomingByte = self.ser.read(1)
+            if not incomingByte:
+                continue
+            #
+            if self.rx_state == RX_STATE_IDLE:
+                if incomingByte[0] == FHONE:
+                    self.rx_buf.extend(incomingByte)
+                elif incomingByte[0] == FHTWO:
+                    if len(self.rx_buf) > 0 and self.rx_buf[0] == FHONE:
+                        self.rx_buf.extend(incomingByte)
+                        self.rx_state = RX_STATE_READ_LEN
+                    else:
+                        self.rx_buf.clear()
+                        print("Unexpected header received: 0x%02x ()" % incomingByte[0])
+                else:
+                    self.rx_buf.clear()
+                    self.error_from_lcd = True
+                    print("Unexpected data received: 0x%02x" % incomingByte[0])
+            #
+            elif self.rx_state == RX_STATE_READ_LEN:
+                self.rx_buf.extend(incomingByte)
+                self.rx_state = RX_STATE_READ_DAT
+            #
+            elif self.rx_state == RX_STATE_READ_DAT:
+                self.rx_buf.extend(incomingByte)
+                self.rx_data_cnt += 1
+                msg_len = self.rx_buf[2]
+                if self.rx_data_cnt >= msg_len:
+                    cmd = self.rx_buf[3]
+                    data = self.rx_buf[-(msg_len-1):]
+                    self._handle_command(cmd, data)
+                    self.rx_buf.clear()
+                    self.rx_data_cnt = 0
+                    self.rx_state = RX_STATE_IDLE
 
     def _handle_command(self, cmd, dat):
-        if cmd in (0x42, 0x81, 0x82):
+        if cmd == CMD_WRITEVAR: #0x82
+            print("Write variable command received")
+            print(binascii.hexlify(dat))
+        elif cmd == CMD_READVAR: #0x83
             addr = dat[0]
-            if addr in self.addr_func_map:
-                self.addr_func_map[addr](dat[1:])
-            return
-
-        if cmd == 0x71:
-            self._handle_get_response(dat)
-            return
-
-        if cmd == 0x10:
-            self._Console(dat)
-            return
-
+            addr = (addr << 8) | dat[1]
+            bytelen = dat[2]
+            data = [32]
+            for i in range (0, bytelen, 2):
+                idx = int(i / 2)
+                data[idx] = dat[3 + i]
+                data[idx] = (data[idx] << 8) | dat[4 + i]
+            self._handle_readvar(addr, data)
+        elif cmd == CMD_CONSOLE: #0x42
+            addr = dat[0]
+            addr = (addr << 8) | dat[1]
+            data = dat[3:] # Remove addr and len
+            self._handle_readvar(addr, data)
+        else:
+            print("Command not reqognised: %d" % cmd)
+            print(binascii.hexlify(dat))
 
     def _handle_readvar(self, addr, data):
         if addr in self.addr_func_map:
+            # Call function corresponding with addr
+            if (self.addr_func_map[addr].__name__ == "_BedLevelFun" and data[0] == 0x0a):
+                pass ## Avoid to spam the log file while printing
+            else:
+                print("%s: len: %d data[0]: %x" % (self.addr_func_map[addr].__name__, len(data), data[0]))
             self.addr_func_map[addr](data)
-
-
-    def _handle_get_response(self, response_bytes):
-        if len(response_bytes) >= 8:
-            value = int.from_bytes(response_bytes[4:8], 'little', signed=False)
-            self.last_read_value = value
-            if self.callback:
-                self.callback("GET_VALUE", value)
-
+        else:
+            print("_handle_readvar: addr %x not recognised" % addr)
 
     def _Console(self, data):
-        data = bytes([b for b in data if b not in (0xFF, 0xA5, 0x00)])
-        if not data:
-            return
-        if data[0] == 0x01:
-            page = "main" if len(data) < 2 or data[1] != 0x02 else "printpause"
-            self.callback("PAGE_CHANGE", page)
+        if data[0] == 0x01: # Back
+            state = self.printer.state
+            if state == "printing" or state == "paused" or state == "pausing":
+                self.write("page printpause")
+            else:
+                self.write("page main")
         else:
-            txt = data.decode("ascii", errors="ignore").strip()
-            if txt:
-                self.callback("CONSOLE", txt)
+            print(data.decode())
+            self.callback(self.evt.CONSOLE, data.decode())
 
     def _MainPage(self, data):
         if data[0] == 1: # Print
