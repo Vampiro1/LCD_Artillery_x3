@@ -71,13 +71,11 @@ class KlipperLCD ():
         else:
             new_val = 0
 
-        current_val = self.lcd.read_value("boot.va2.val")
-        print(f"current_val ({type(current_val)}):", current_val, "new_val:", new_val)
-
+        current_val = self.lcd.read_value("boot.va2.val", mem_addr)
         if current_val != new_val:
             self.lcd.write(f"boot.va2.val={new_val}")
             self.lcd.write(f"wepo boot.va2.val,{mem_addr}")
-        self.lcd.write("page main")
+            self.lcd.write("page main")
 
 
     def start(self):
@@ -363,6 +361,7 @@ if __name__ == "__main__":
 
     x = KlipperLCD()
     x.start()
+
 
 
 
