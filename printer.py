@@ -483,10 +483,10 @@ class PrinterData:
 		os.system("shutdown -h now")
 
 	def restart_klipperlcd(self):
-		os.system("systemctl restart KlipperLCD.service")
+		os.system("systemctl restart klipperlcd.service")
 
 	def stop_klipperlcd(self):
-		os.system("systemctl stop KlipperLCD.service")
+		os.system("systemctl stop klipperlcd.service")
 
 
 	# ------------- OctoPrint Function ----------
@@ -838,4 +838,3 @@ class PrinterData:
 
 	def setZOffset(self, offset):
 		self.sendGCode('SET_GCODE_OFFSET Z=%s MOVE=1' % offset)
-
