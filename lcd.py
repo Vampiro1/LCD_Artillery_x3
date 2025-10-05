@@ -642,23 +642,21 @@ class LCD:
             self.waiting_for_value = False
 
     def _Console(self, data):
+        # Intentar decodificar para logging, si falla mantener los bytes
         try:
-            text = data.decode('utf-8', errors='replace')
-            print(text)
-        except Exception as e:
-            print(f"[ERROR _Console] Error decodificando datos: {e}")
-            print(f"[ERROR _Console] Datos crudos: {data}")
+            decoded = data.decode('utf-8')
+        except UnicodeDecodeError:
+            decoded = None
+            print(f"[WARN _Console] Data no decodificable: {data}")
 
-        # Depuración adicional para identificar el origen del 0xA5
-        hex_data = ' '.join(f'{b:02X}' for b in data)
-        print(f"[DEBUG _Console] Longitud: {len(data)}  Bytes: {hex_data}")
+        # Log para depuración
+        print(f"[_Console] Raw data ({len(data)} bytes): {data}")
+        if decoded:
+            print(f"[_Console] Decoded: {decoded}")
 
-        try:
-            if b'SET_LED' in data:
-                text = data.decode('utf-8', errors='replace')
-                print(f"[GCODE DETECTADO] {text}")
-        except Exception as e:
-            print(f"[ERROR _Console Extra] {e}")
+        # Callback igual que antes, pero seguro
+        self.callback(self.evt.CONSOLE, decoded if decoded else data)
+
 
 
     def _MainPage(self, data):
