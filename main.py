@@ -356,14 +356,14 @@ class KlipperLCD ():
         elif evt == self.lcd.evt.EMERGENCY_STOP:
             self.printer.emergency_stop()
 
-
         else:
-            print("lcd_callback event not recognised %d" % evt)
+            print(f"lcd_callback event not recognised {evt}")
 
 if __name__ == "__main__":
 
     x = KlipperLCD()
     x.start()
+
 
 
 
