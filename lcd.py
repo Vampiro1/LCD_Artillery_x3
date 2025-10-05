@@ -642,15 +642,24 @@ class LCD:
             self.waiting_for_value = False
 
     def _Console(self, data):
-        if data[0] == 0x01: # Back
-            state = self.printer.state
-            if state == "printing" or state == "paused" or state == "pausing":
-                self.write("page printpause")
-            else:
-                self.write("page main")
-        else:
-            print(data.decode())
-            self.callback(self.evt.CONSOLE, data.decode())
+        try:
+            text = data.decode('utf-8', errors='replace')
+            print(text)
+        except Exception as e:
+            print(f"[ERROR _Console] Error decodificando datos: {e}")
+            print(f"[ERROR _Console] Datos crudos: {data}")
+
+        # Depuración adicional para identificar el origen del 0xA5
+        hex_data = ' '.join(f'{b:02X}' for b in data)
+        print(f"[DEBUG _Console] Longitud: {len(data)}  Bytes: {hex_data}")
+
+        try:
+            if b'SET_LED' in data:
+                text = data.decode('utf-8', errors='replace')
+                print(f"[GCODE DETECTADO] {text}")
+        except Exception as e:
+            print(f"[ERROR _Console Extra] {e}")
+
 
     def _MainPage(self, data):
         if data[0] == 1: # Print
