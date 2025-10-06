@@ -1241,6 +1241,7 @@ class LCD:
         if data[0] == 0x01:
             subprocess.Popen(["python3", "/home/pi/KlipperLCD/firmw_update.py"])
         elif data[0] == 0x02:
+            time.sleep(2)
             subprocess.Popen(["systemctl", "start", "firmw.service"])
 
         elif data[0] == 0x0f:
