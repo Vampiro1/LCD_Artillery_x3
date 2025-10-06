@@ -615,29 +615,6 @@ class LCD:
             print("Command not reqognised: %d" % cmd)
             print(binascii.hexlify(dat))
 
-    def _handle_command(self, cmd, dat):
-        if cmd == CMD_WRITEVAR: #0x82
-            print("Write variable command received")
-            print(binascii.hexlify(dat))
-        elif cmd == CMD_READVAR: #0x83
-            addr = dat[0]
-            addr = (addr << 8) | dat[1]
-            bytelen = dat[2]
-            data = [32]
-            for i in range (0, bytelen, 2):
-                idx = int(i / 2)
-                data[idx] = dat[3 + i]
-                data[idx] = (data[idx] << 8) | dat[4 + i]
-            self._handle_readvar(addr, data)
-        elif cmd == CMD_CONSOLE: #0x42
-            addr = dat[0]
-            addr = (addr << 8) | dat[1]
-            data = dat[3:] # Remove addr and len
-            self._handle_readvar(addr, data)
-        else:
-            print("Command not reqognised: %d" % cmd)
-            print(binascii.hexlify(dat))
-
     def _handle_readvar(self, addr, data):
         if addr in self.addr_func_map:
             # Call function corresponding with addr
