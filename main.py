@@ -26,7 +26,8 @@ def find_port():
 
     for port in possible_ports:
         try:
-            with serial.Serial(port, 115200, timeout=0.1) as ser:                                                             return port
+            with serial.Serial(port, 115200, timeout=0.1) as ser:
+                return port
         except:
             continue
     return None
@@ -366,9 +367,6 @@ if __name__ == "__main__":
 
     x = KlipperLCD()
     x.start()
-
-
-
 
 
 
