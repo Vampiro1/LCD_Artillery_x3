@@ -6,6 +6,9 @@ Want to run Klipper on your Artillery x3 Plus/Pro? And still want to be able to 
 Take a look at this python service for the Artillery x3 Plus/Pro LCD! Running together with Klipper3d and Moonraker!
 
 ## Look and feel
+
+https://www.youtube.com/watch?v=IGhVE-ae_BE&t=20s
+
 <p float="left">
     <img src="img/boot_screen.PNG" height="400">
     <img src="img/main_screen.PNG" height="400">
