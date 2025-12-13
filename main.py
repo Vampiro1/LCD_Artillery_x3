@@ -33,6 +33,7 @@ class KlipperLCD ():
     def __init__(self):
 
         port = find_port()
+        print("PUERTO SELECCIONADO:", port)
         if not port:
             raise Exception("No se encontró ningún puerto válido para la pantalla")
         self.lcd = LCD(port, callback=self.lcd_callback)
@@ -364,6 +365,7 @@ if __name__ == "__main__":
 
     x = KlipperLCD()
     x.start()
+
 
 
 
