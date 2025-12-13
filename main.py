@@ -17,7 +17,6 @@ def find_port():
     # 1️⃣ UART por USB (prioridad si existe)
     usb_ports = []
     usb_ports.extend(glob.glob('/dev/ttyUSB*'))
-    usb_ports.extend(glob.glob('/dev/ttyACM*'))
 
     if usb_ports:
         return usb_ports[0]
@@ -365,6 +364,7 @@ if __name__ == "__main__":
 
     x = KlipperLCD()
     x.start()
+
 
 
 
