@@ -14,17 +14,17 @@ from printer import PrinterData
 from lcd import LCD, _printerData
 
 def find_port():
-    # UART por GPIO (prioridad absoluta)
-    if os.path.exists('/dev/serial0'):
-        return '/dev/serial0'
-
-    # UART por USB
+    # 1️⃣ UART por USB (prioridad si existe)
     usb_ports = []
     usb_ports.extend(glob.glob('/dev/ttyUSB*'))
     usb_ports.extend(glob.glob('/dev/ttyACM*'))
 
     if usb_ports:
         return usb_ports[0]
+
+    # 2️⃣ UART por GPIO
+    if os.path.exists('/dev/serial0'):
+        return '/dev/serial0'
 
     return None
 
@@ -364,6 +364,7 @@ if __name__ == "__main__":
 
     x = KlipperLCD()
     x.start()
+
 
 
 
