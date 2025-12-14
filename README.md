@@ -102,6 +102,8 @@ Quite simple, just remember to cross RX and TX on the LCD and the USB/UART HW.
     cd KlipperLCD
     ./install.sh
 
+The script is designed to automatically detect UART or USB-to-UART connections.
+If you experience any connection problems, please let me know.
 
 
 ## Console
