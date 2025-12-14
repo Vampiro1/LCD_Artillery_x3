@@ -96,6 +96,12 @@ Quite simple, just remember to cross RX and TX on the LCD and the USB/UART HW.
     The KLIPPER_ARGS should include `-a /home/pi/printer_data/comms/klippy.sock`. If not add it to the klipper.env file!
 
 ### Install service
+
+
+The script is designed to use the /home/pi directory and has root privileges.
+
+Therefore, if you have, or do something different, I cannot guarantee that certain features, such as automatic firmware updates, will not fail to run.
+
     cd /home/pi
     rm -rf KlipperLCD
     git clone https://github.com/Vampiro1/LCD_Artillery_x3 KlipperLCD
@@ -103,6 +109,7 @@ Quite simple, just remember to cross RX and TX on the LCD and the USB/UART HW.
     ./install.sh
 
 The script is designed to automatically detect UART or USB-to-UART connections.
+
 If you experience any connection problems, please let me know.
 
 
