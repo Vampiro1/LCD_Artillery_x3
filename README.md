@@ -7,7 +7,7 @@ Take a look at this python service for the Artillery x3 Plus/Pro LCD! Running to
 
 ## Look and feel
 
-https://www.youtube.com/watch?v=IGhVE-ae_BE&t=20s
+https://www.youtube.com/watch?v=IGhVE-ae_BE&t
 
 
 
