@@ -10,19 +10,17 @@ DOWNLOAD_BAUD = 921600
 USADO_SUFFIX = "usado"
 
 def find_port():
-    possible_ports = []
-    possible_ports.extend(glob.glob('/dev/ttyUSB*'))
-    possible_ports.extend(glob.glob('/dev/ttyACM*'))
-    for candidate in ['/dev/ttyAMA0', '/dev/ttyS0', '/dev/serial0']:
-        if os.path.exists(candidate):
-            possible_ports.append(candidate)
+    # 1️⃣ UART por USB (prioridad si existe)
+    usb_ports = []
+    usb_ports.extend(glob.glob('/dev/ttyUSB*'))
 
-    for port in possible_ports:
-        try:
-            with serial.Serial(port, 921600, timeout=0.1) as ser:
-                return port
-        except:
-            continue
+    if usb_ports:
+        return usb_ports[0]
+
+    # 2️⃣ UART por GPIO
+    if os.path.exists('/dev/serial0'):
+        return '/dev/serial0'
+
     return None
 
 def connect_to_screen(port):
