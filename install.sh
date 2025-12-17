@@ -3,9 +3,7 @@ set -e
 
 echo "=== Instalando dependencias ==="
 sudo apt-get update
-sudo apt-get install -y python3-pip git unzip wget
-pip3 install --upgrade pip
-pip3 install pyserial
+sudo apt-get install -y python3 python3-serial git unzip wget
 
 echo "=== Preparando firmware ==="
 FIRMWARE_DEST="/home/pi/KlipperLCD/firmware"
