@@ -355,6 +355,18 @@ class PrinterData:
 						self.current_position.e = status['gcode_move']['gcode_position'][3]
 						self.current_position.updated = True
 
+			if 'toolhead' in status:
+				if 'position' in status['toolhead']:
+					if self.current_position.x != status['toolhead']['position'][0]:
+						self.current_position.x = status['toolhead']['position'][0]
+						self.current_position.updated = True
+					if self.current_position.y != status['toolhead']['position'][1]:
+						self.current_position.y = status['toolhead']['position'][1]
+						self.current_position.updated = True
+					if self.current_position.z != status['toolhead']['position'][2]:
+						self.current_position.z = status['toolhead']['position'][2]
+						self.current_position.updated = True	
+
 				if 'homed_axes' in status['toolhead']:
 					if 'x' in status['toolhead']['homed_axes']:
 						self.current_position.home_x = True
@@ -842,4 +854,5 @@ class PrinterData:
 
 	def setZOffset(self, offset):
 		self.sendGCode('SET_GCODE_OFFSET Z=%s MOVE=1' % offset)
+
 
