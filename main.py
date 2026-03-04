@@ -122,9 +122,9 @@ class KlipperLCD ():
             data.neo_b         = self.printer.neopixel_b
             data.filament_detected       = self.printer.filament_detected
             data.filament_sensor_enabled = self.printer.filament_sensor_enabled
-            data.x_pos         = self.printer.current_position.x
-            data.y_pos         = self.printer.current_position.y
-            data.z_pos         = self.printer.current_position.z
+            data.x_pos         = self.printer.gcode_position.x
+            data.y_pos         = self.printer.gcode_position.y
+            data.z_pos         = self.printer.gcode_position.z
             data.z_offset      = self.printer.BABY_Z_VAR
             data.MACHINE_SIZE  = self.printer.MACHINE_SIZE
             data.file_name     = self.printer.file_name
@@ -364,6 +364,7 @@ if __name__ == "__main__":
 
     x = KlipperLCD()
     x.start()
+
 
 
 
