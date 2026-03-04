@@ -251,6 +251,7 @@ class PrinterData:
 		self.HMI_ValueStruct  = HMI_value_t()
 		self.HMI_flag         = HMI_Flag_t()
 		self.current_position = xyze_t()
+		self.gcode_position   = xyze_t()
 		self.gcm              = None
 		self.z_offset         = 0
 		self.thermalManager   = {
@@ -342,18 +343,15 @@ class PrinterData:
 
 			if 'gcode_move' in status:
 				if 'gcode_position' in status['gcode_move']:
-					if self.current_position.x != status['gcode_move']['gcode_position'][0]:
-						self.current_position.x = status['gcode_move']['gcode_position'][0]
-						self.current_position.updated = True
-					if self.current_position.y != status['gcode_move']['gcode_position'][1]:
-						self.current_position.y = status['gcode_move']['gcode_position'][1]
-						self.current_position.updated = True
-					if self.current_position.z != status['gcode_move']['gcode_position'][2]:
-						self.current_position.z = status['gcode_move']['gcode_position'][2]
-						self.current_position.updated = True
-					if self.current_position.e != status['gcode_move']['gcode_position'][3]:
-						self.current_position.e = status['gcode_move']['gcode_position'][3]
-						self.current_position.updated = True
+					if self.gcode_position.x != status['gcode_move']['gcode_position'][0]:
+						self.gcode_position.x = status['gcode_move']['gcode_position'][0]
+						self.gcode_position.updated = True
+					if self.gcode_position.y != status['gcode_move']['gcode_position'][1]:
+						self.gcode_position.y = status['gcode_move']['gcode_position'][1]
+						self.gcode_position.updated = True
+					if self.gcode_position.z != status['gcode_move']['gcode_position'][2]:
+						self.gcode_position.z = status['gcode_move']['gcode_position'][2]
+						self.gcode_position.updated = True
 
 			if 'toolhead' in status:
 				if 'position' in status['toolhead']:
@@ -854,5 +852,6 @@ class PrinterData:
 
 	def setZOffset(self, offset):
 		self.sendGCode('SET_GCODE_OFFSET Z=%s MOVE=1' % offset)
+
 
 
