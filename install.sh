@@ -43,8 +43,7 @@ type: git_repo
 path: ~/KlipperLCD
 origin: https://github.com/Vampiro1/LCD_Artillery_x3.git
 primary_branch: master
-channel: dev
-is_system_service: True
+managed_services: klipperlcd
 EOL
 
 sudo systemctl restart moonraker
